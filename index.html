@@ -121,10 +121,10 @@ header {
 /* ── MAIN ── */
 .main { padding: 20px; max-width: 1400px; margin: 0 auto; }
 
-.table-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; box-shadow: var(--shadow); }
+.table-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; overflow: visible; box-shadow: var(--shadow); }
 .table-wrap { overflow-x: auto; }
 table { width: 100%; border-collapse: collapse; font-size: 13px; }
-thead { background: var(--surface2); position: sticky; top: var(--top-offset); z-index: 10; }
+thead { background: var(--surface2); position: sticky; top: var(--top-offset); z-index: 10; box-shadow: 0 1px 0 var(--border); }
 th { padding: 10px 14px; text-align: left; font-family: 'IBM Plex Mono', monospace; font-size: 10px; font-weight: 600; color: var(--text3); text-transform: uppercase; letter-spacing: .6px; white-space: nowrap; border-bottom: 1px solid var(--border); cursor: pointer; user-select: none; }
 th:hover { color: var(--text2); }
 th.sorted { color: var(--green); }
@@ -189,7 +189,7 @@ td.mono { font-family: 'IBM Plex Mono', monospace; font-size: 12px; }
 .dsec-count { font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: var(--text3); background: var(--surface2); border: 1px solid var(--border); border-radius: 10px; padding: 1px 7px; }
 .dsec-arrow { color: var(--text3); font-size: 11px; transition: transform .2s; margin-left: 4px; }
 .dsec-header.collapsed .dsec-arrow { transform: rotate(-90deg); }
-.dsec-body { padding: 14px 16px; display: grid; grid-template-columns: 1fr 1fr; gap: 14px 24px; }
+.dsec-body { padding: 14px 16px; display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 14px 20px; }
 .dsec-body.collapsed { display: none; }
 .dfield { display: flex; flex-direction: column; gap: 3px; }
 .dfield.full { grid-column: 1 / -1; }
@@ -216,6 +216,9 @@ td.mono { font-family: 'IBM Plex Mono', monospace; font-size: 12px; }
   .drawer { width: 100vw; }
   .dsec-body { grid-template-columns: 1fr; }
   .main { padding: 12px; }
+}
+@media (min-width: 769px) {
+  .cards-view { display: none !important; }
 }
 </style>
 </head>
@@ -356,6 +359,7 @@ function loadData() {
       document.getElementById('tableCard').style.display = 'block';
       document.getElementById('cardsView').style.display = 'block';
       setStatus('ok', allData.length + ' registros');
+      updateTheadOffset();
     },
     error(err) { showError('Error al cargar:\n' + err.message); }
   });
@@ -508,6 +512,10 @@ function refreshAllDropdowns() {
 function applyFilters() {
   const search = document.getElementById('search').value.toLowerCase();
   filtered = allData.filter(r => {
+    // Ocultar filas sin datos clave
+    if (!hasVal(r['Campo']) && !hasVal(r['Lote']) && !hasVal(r['Cultivo'])) return false;
+    if (!hasVal(r['Campo']) || !hasVal(r['Cultivo'])) return false;
+
     for (const fd of FILTER_DEF) {
       if (SEL[fd.id].size > 0 && !SEL[fd.id].has(r[fd.col])) return false;
     }
