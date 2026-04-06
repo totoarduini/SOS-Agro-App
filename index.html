@@ -121,12 +121,14 @@ header {
 /* ── MAIN ── */
 .main { padding: 20px; max-width: 1400px; margin: 0 auto; }
 
-/* Sin overflow en el card para que sticky funcione */
 .table-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; box-shadow: var(--shadow); }
-.table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+.table-wrap {
+  overflow: auto;                                    /* scroll en X e Y */
+  height: calc(100vh - var(--top-offset) - 40px);   /* llena el espacio restante */
+  -webkit-overflow-scrolling: touch;
+}
 table { width: 100%; border-collapse: collapse; font-size: 13px; }
-/* top se setea por JS directamente en cada th */
-thead th { background: var(--surface2); position: sticky; z-index: 10; }
+thead th { background: var(--surface2); position: sticky; top: 0; z-index: 10; } /* top:0 dentro del .table-wrap */
 th { padding: 10px 14px; text-align: left; font-family: 'IBM Plex Mono', monospace; font-size: 10px; font-weight: 600; color: var(--text3); text-transform: uppercase; letter-spacing: .6px; white-space: nowrap; border-bottom: 2px solid var(--border); cursor: pointer; user-select: none; }
 th:hover { color: var(--text2); }
 th.sorted { color: var(--green); }
@@ -338,14 +340,13 @@ function getF(row, ...names) {
 // ── LOAD ─────────────────────────────────────────────────────────────
 window.onload = () => {
   loadData();
-  updateStickyHeader();
-  new ResizeObserver(updateStickyHeader).observe(document.getElementById('topBar'));
+  updateTopOffset();
+  new ResizeObserver(updateTopOffset).observe(document.getElementById('topBar'));
 };
 
-function updateStickyHeader() {
+function updateTopOffset() {
   const h = document.getElementById('topBar').offsetHeight;
-  // Aplicar top directamente a cada th — más confiable que CSS variable
-  document.querySelectorAll('thead th').forEach(th => th.style.top = h + 'px');
+  document.documentElement.style.setProperty('--top-offset', h + 'px');
 }
 
 function loadData() {
@@ -530,7 +531,6 @@ function applyFilters() {
     return true;
   });
   sortData(); renderTable(); renderCards();
-  updateStickyHeader();
   document.getElementById('countBadge').innerHTML =
     `<strong>${filtered.length}</strong> / ${allData.length} registros`;
 }
@@ -538,7 +538,7 @@ function applyFilters() {
 // ── SORT ──────────────────────────────────────────────────────────────
 function sortBy(col) {
   sortAsc = sortCol===col ? !sortAsc : true; sortCol=col;
-  sortData(); renderTable(); updateStickyHeader();
+  sortData(); renderTable();
 }
 function sortData() {
   filtered.sort((a,b) => {
