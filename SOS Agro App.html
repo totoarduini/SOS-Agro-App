@@ -1,0 +1,974 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Registros de Campo — SOS Agro</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap');
+
+  :root {
+    --bg: #0f1117;
+    --bg2: #181c27;
+    --bg3: #1e2333;
+    --border: #2a3045;
+    --border2: #3a4560;
+    --green: #22c55e;
+    --green-dim: #166534;
+    --yellow: #eab308;
+    --blue: #3b82f6;
+    --red: #ef4444;
+    --text: #e2e8f0;
+    --text2: #94a3b8;
+    --text3: #64748b;
+    --accent: #22c55e;
+  }
+
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+
+  body {
+    font-family: 'IBM Plex Sans', sans-serif;
+    background: var(--bg);
+    color: var(--text);
+    min-height: 100vh;
+    font-size: 14px;
+  }
+
+  /* ── HEADER ── */
+  header {
+    background: var(--bg2);
+    border-bottom: 1px solid var(--border);
+    padding: 0 16px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    height: 52px;
+    position: sticky;
+    top: 0;
+    z-index: 100;
+  }
+  .logo {
+    display: flex;
+    align-items: center;
+    gap: 10px;
+  }
+  .logo-icon {
+    width: 30px; height: 30px;
+    background: var(--green);
+    border-radius: 6px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px;
+  }
+  .logo-text {
+    font-family: 'IBM Plex Mono', monospace;
+    font-weight: 600;
+    font-size: 14px;
+    letter-spacing: -0.5px;
+  }
+  .logo-text span { color: var(--green); }
+  .header-right {
+    display: flex; align-items: center; gap: 8px;
+  }
+  .btn-new {
+    background: var(--green);
+    color: #000;
+    border: none;
+    border-radius: 6px;
+    padding: 6px 14px;
+    font-family: 'IBM Plex Sans', sans-serif;
+    font-weight: 600;
+    font-size: 13px;
+    cursor: pointer;
+    display: flex; align-items: center; gap: 6px;
+    transition: opacity .15s;
+  }
+  .btn-new:hover { opacity: .85; }
+  .status-dot {
+    width: 8px; height: 8px;
+    border-radius: 50%;
+    background: var(--green);
+    animation: pulse 2s infinite;
+  }
+  @keyframes pulse {
+    0%,100% { opacity: 1; } 50% { opacity: .4; }
+  }
+
+  /* ── FILTERS ── */
+  .filters-bar {
+    background: var(--bg2);
+    border-bottom: 1px solid var(--border);
+    padding: 10px 16px;
+    display: flex;
+    gap: 8px;
+    flex-wrap: wrap;
+    align-items: center;
+  }
+  .filter-group {
+    display: flex; align-items: center; gap: 6px;
+  }
+  .filter-label {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    color: var(--text3);
+    text-transform: uppercase;
+    letter-spacing: .5px;
+    white-space: nowrap;
+  }
+  select, input[type="text"] {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text);
+    padding: 5px 10px;
+    font-family: 'IBM Plex Sans', sans-serif;
+    font-size: 13px;
+    outline: none;
+    transition: border-color .15s;
+  }
+  select:focus, input[type="text"]:focus {
+    border-color: var(--green);
+  }
+  .search-input { width: 200px; }
+  .count-badge {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    color: var(--text3);
+    margin-left: auto;
+    white-space: nowrap;
+  }
+  .count-badge strong { color: var(--green); }
+
+  /* ── TABLE ── */
+  .main {
+    padding: 16px;
+    max-width: 1400px;
+    margin: 0 auto;
+  }
+
+  .table-wrap {
+    overflow-x: auto;
+    border: 1px solid var(--border);
+    border-radius: 10px;
+  }
+  table {
+    width: 100%;
+    border-collapse: collapse;
+    font-size: 13px;
+  }
+  thead {
+    background: var(--bg3);
+    position: sticky;
+    top: 52px;
+    z-index: 10;
+  }
+  th {
+    padding: 10px 12px;
+    text-align: left;
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    font-weight: 500;
+    color: var(--text3);
+    text-transform: uppercase;
+    letter-spacing: .5px;
+    white-space: nowrap;
+    border-bottom: 1px solid var(--border);
+    cursor: pointer;
+    user-select: none;
+  }
+  th:hover { color: var(--text2); }
+  th.sorted { color: var(--green); }
+
+  tbody tr {
+    border-bottom: 1px solid var(--border);
+    cursor: pointer;
+    transition: background .1s;
+  }
+  tbody tr:last-child { border-bottom: none; }
+  tbody tr:hover { background: var(--bg3); }
+  tbody tr.active-row { background: rgba(34,197,94,.07); }
+
+  td {
+    padding: 10px 12px;
+    white-space: nowrap;
+    color: var(--text2);
+  }
+  td.primary { color: var(--text); font-weight: 500; }
+  td.mono {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+  }
+  .tag {
+    display: inline-block;
+    padding: 2px 8px;
+    border-radius: 4px;
+    font-size: 11px;
+    font-weight: 600;
+    font-family: 'IBM Plex Mono', monospace;
+  }
+  .tag-cultivo {
+    background: rgba(34,197,94,.15);
+    color: var(--green);
+  }
+  .tag-soja { background: rgba(234,179,8,.12); color: var(--yellow); }
+  .tag-maiz { background: rgba(59,130,246,.12); color: var(--blue); }
+  .tag-trigo { background: rgba(251,191,36,.12); color: #fbbf24; }
+  .tag-girasol { background: rgba(249,115,22,.12); color: #f97316; }
+  .tag-cebada { background: rgba(167,139,250,.12); color: #a78bfa; }
+  .tag-other { background: rgba(148,163,184,.12); color: var(--text2); }
+
+  .rinde-val {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 12px;
+    color: var(--text);
+  }
+  .rinde-empty { color: var(--text3); font-style: italic; }
+
+  /* ── LOADING & EMPTY ── */
+  .state-box {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: 60px 20px;
+    gap: 12px;
+    color: var(--text3);
+  }
+  .spinner {
+    width: 28px; height: 28px;
+    border: 2px solid var(--border2);
+    border-top-color: var(--green);
+    border-radius: 50%;
+    animation: spin .7s linear infinite;
+  }
+  @keyframes spin { to { transform: rotate(360deg); } }
+  .state-box p { font-family: 'IBM Plex Mono', monospace; font-size: 12px; }
+
+  /* ── DRAWER DETAIL ── */
+  .overlay {
+    display: none;
+    position: fixed; inset: 0;
+    background: rgba(0,0,0,.6);
+    z-index: 200;
+    backdrop-filter: blur(2px);
+  }
+  .overlay.open { display: block; }
+
+  .drawer {
+    position: fixed;
+    top: 0; right: 0;
+    width: min(560px, 100vw);
+    height: 100vh;
+    background: var(--bg2);
+    border-left: 1px solid var(--border);
+    z-index: 201;
+    transform: translateX(100%);
+    transition: transform .25s cubic-bezier(.16,1,.3,1);
+    display: flex; flex-direction: column;
+    overflow: hidden;
+  }
+  .drawer.open { transform: translateX(0); }
+
+  .drawer-header {
+    padding: 16px 20px;
+    border-bottom: 1px solid var(--border);
+    display: flex;
+    align-items: flex-start;
+    justify-content: space-between;
+    gap: 12px;
+    flex-shrink: 0;
+  }
+  .drawer-title-block {}
+  .drawer-id {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    color: var(--text3);
+    margin-bottom: 4px;
+  }
+  .drawer-title {
+    font-size: 18px;
+    font-weight: 600;
+    color: var(--text);
+    line-height: 1.2;
+  }
+  .drawer-sub {
+    font-size: 13px;
+    color: var(--text2);
+    margin-top: 3px;
+  }
+  .btn-close {
+    background: var(--bg3);
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    color: var(--text2);
+    padding: 6px 10px;
+    cursor: pointer;
+    font-size: 16px;
+    flex-shrink: 0;
+    transition: all .15s;
+  }
+  .btn-close:hover { border-color: var(--border2); color: var(--text); }
+
+  .drawer-body {
+    overflow-y: auto;
+    flex: 1;
+    padding: 16px 20px;
+    display: flex;
+    flex-direction: column;
+    gap: 16px;
+  }
+
+  /* Drawer sections */
+  .dsec {
+    border: 1px solid var(--border);
+    border-radius: 8px;
+    overflow: hidden;
+  }
+  .dsec-header {
+    background: var(--bg3);
+    padding: 8px 14px;
+    display: flex; align-items: center; gap: 8px;
+    cursor: pointer;
+    user-select: none;
+  }
+  .dsec-icon { font-size: 14px; }
+  .dsec-title {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    font-weight: 600;
+    text-transform: uppercase;
+    letter-spacing: .8px;
+    color: var(--text2);
+    flex: 1;
+  }
+  .dsec-arrow {
+    color: var(--text3);
+    font-size: 12px;
+    transition: transform .2s;
+  }
+  .dsec-header.collapsed .dsec-arrow { transform: rotate(-90deg); }
+
+  .dsec-body {
+    padding: 12px 14px;
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 10px;
+  }
+  .dsec-body.collapsed { display: none; }
+
+  .dfield { display: flex; flex-direction: column; gap: 2px; }
+  .dfield.full { grid-column: 1 / -1; }
+  .dfield-label {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    color: var(--text3);
+    text-transform: uppercase;
+    letter-spacing: .5px;
+  }
+  .dfield-val {
+    font-size: 13px;
+    color: var(--text);
+    word-break: break-word;
+  }
+  .dfield-val.empty { color: var(--text3); font-style: italic; }
+  .dfield-val.highlight {
+    font-family: 'IBM Plex Mono', monospace;
+    color: var(--green);
+    font-size: 15px;
+    font-weight: 600;
+  }
+
+  /* Sub-table for fertilizantes */
+  .fert-table {
+    grid-column: 1 / -1;
+    border: 1px solid var(--border);
+    border-radius: 6px;
+    overflow: hidden;
+  }
+  .fert-table table {
+    font-size: 12px;
+  }
+  .fert-table th {
+    padding: 6px 10px;
+    font-size: 10px;
+    background: rgba(255,255,255,.03);
+    top: auto;
+    position: static;
+  }
+  .fert-table td {
+    padding: 7px 10px;
+  }
+
+  /* ── EMPTY / ERROR ── */
+  .error-msg {
+    background: rgba(239,68,68,.1);
+    border: 1px solid rgba(239,68,68,.3);
+    border-radius: 8px;
+    padding: 16px;
+    color: #fca5a5;
+    font-size: 13px;
+    font-family: 'IBM Plex Mono', monospace;
+  }
+
+  /* ── MOBILE CARDS ── */
+  .cards-view { display: none; }
+  .card {
+    background: var(--bg2);
+    border: 1px solid var(--border);
+    border-radius: 10px;
+    padding: 14px;
+    cursor: pointer;
+    transition: border-color .15s;
+    margin-bottom: 10px;
+  }
+  .card:hover, .card.active-card { border-color: var(--green); }
+  .card-top {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    margin-bottom: 8px;
+  }
+  .card-title { font-weight: 600; font-size: 15px; }
+  .card-id {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 11px;
+    color: var(--text3);
+  }
+  .card-row {
+    display: flex; gap: 16px; flex-wrap: wrap;
+    margin-top: 6px;
+  }
+  .card-kv { display: flex; flex-direction: column; }
+  .card-k {
+    font-family: 'IBM Plex Mono', monospace;
+    font-size: 10px;
+    color: var(--text3);
+    text-transform: uppercase;
+  }
+  .card-v { font-size: 13px; color: var(--text2); }
+
+  /* Responsive */
+  @media (max-width: 768px) {
+    .table-wrap { display: none; }
+    .cards-view { display: block; }
+    .search-input { width: 140px; }
+    .filters-bar { overflow-x: auto; flex-wrap: nowrap; }
+    .count-badge { display: none; }
+    .drawer { width: 100vw; }
+  }
+</style>
+</head>
+<body>
+
+<!-- HEADER -->
+<header>
+  <div class="logo">
+    <div class="logo-icon">🌾</div>
+    <div class="logo-text">SOS<span>Agro</span> · Registros</div>
+  </div>
+  <div class="header-right">
+    <div class="status-dot" id="statusDot" title="Sin conexión"></div>
+    <button class="btn-new" onclick="alert('Alta de registros — próximamente (requiere configuración de Google Apps Script)')">
+      + Nuevo registro
+    </button>
+  </div>
+</header>
+
+<!-- FILTERS -->
+<div class="filters-bar">
+  <div class="filter-group">
+    <span class="filter-label">Búsqueda</span>
+    <input type="text" class="search-input" id="search" placeholder="Campo, Lote, Genética…" oninput="applyFilters()">
+  </div>
+  <div class="filter-group">
+    <span class="filter-label">Empresa</span>
+    <select id="fEmpresa" onchange="applyFilters()"><option value="">Todas</option></select>
+  </div>
+  <div class="filter-group">
+    <span class="filter-label">Campaña</span>
+    <select id="fCampana" onchange="applyFilters()"><option value="">Todas</option></select>
+  </div>
+  <div class="filter-group">
+    <span class="filter-label">Cultivo</span>
+    <select id="fCultivo" onchange="applyFilters()"><option value="">Todos</option></select>
+  </div>
+  <div class="count-badge" id="countBadge"></div>
+</div>
+
+<!-- MAIN -->
+<div class="main">
+  <!-- Loading -->
+  <div class="state-box" id="loadingState">
+    <div class="spinner"></div>
+    <p>Cargando datos desde Google Sheets…</p>
+  </div>
+
+  <!-- Error -->
+  <div class="error-msg" id="errorState" style="display:none"></div>
+
+  <!-- Table (desktop) -->
+  <div class="table-wrap" id="tableWrap" style="display:none">
+    <table>
+      <thead>
+        <tr>
+          <th onclick="sortBy('ID Registro')" id="th-id">ID</th>
+          <th onclick="sortBy('EMPRESA')" id="th-empresa">Empresa</th>
+          <th onclick="sortBy('Campo')" id="th-campo">Campo</th>
+          <th onclick="sortBy('Lote')" id="th-lote">Lote</th>
+          <th onclick="sortBy('Campaña')" id="th-campaña">Campaña</th>
+          <th onclick="sortBy('Cultivo')" id="th-cultivo">Cultivo</th>
+          <th onclick="sortBy('Ambiente Regional')" id="th-amb">Ambiente</th>
+          <th onclick="sortBy('Superficie Sembrada')" id="th-sup">Sup. (ha)</th>
+          <th onclick="sortBy('Antecesor')" id="th-ant">Antecesor</th>
+          <th onclick="sortBy('Fecha de Siembra')" id="th-siembra">F. Siembra</th>
+          <th onclick="sortBy('Rendimiento (kg/ha sembrada)')" id="th-rinde">Rinde (kg/ha)</th>
+        </tr>
+      </thead>
+      <tbody id="tableBody"></tbody>
+    </table>
+  </div>
+
+  <!-- Cards (mobile) -->
+  <div class="cards-view" id="cardsView"></div>
+</div>
+
+<!-- OVERLAY -->
+<div class="overlay" id="overlay" onclick="closeDrawer()"></div>
+
+<!-- DRAWER -->
+<div class="drawer" id="drawer">
+  <div class="drawer-header">
+    <div class="drawer-title-block">
+      <div class="drawer-id" id="dId"></div>
+      <div class="drawer-title" id="dTitle"></div>
+      <div class="drawer-sub" id="dSub"></div>
+    </div>
+    <button class="btn-close" onclick="closeDrawer()">✕</button>
+  </div>
+  <div class="drawer-body" id="drawerBody"></div>
+</div>
+
+<script>
+// ── CONFIG ──────────────────────────────────────────────────────────────
+const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTHHByh3mYfSKCYUj01eUDVH8cvbzkVLpQjxAEiji7ma6wOG0mJ6W9qlIgNPm_dmzbCuT19GQKTgvll/pub?gid=267525563&single=true&output=csv';
+
+// ── STATE ────────────────────────────────────────────────────────────────
+let allData = [];
+let filtered = [];
+let sortCol = 'ID Registro';
+let sortAsc = true;
+let activeIdx = null;
+
+// ── INIT ─────────────────────────────────────────────────────────────────
+window.onload = () => loadData();
+
+function loadData() {
+  Papa.parse(CSV_URL, {
+    download: true,
+    header: true,
+    skipEmptyLines: true,
+    complete: (results) => {
+      if (!results.data || results.data.length === 0) {
+        showError('No se encontraron datos en la planilla.');
+        return;
+      }
+      allData = results.data;
+      buildFilters();
+      applyFilters();
+      document.getElementById('loadingState').style.display = 'none';
+      document.getElementById('tableWrap').style.display = 'block';
+      document.getElementById('cardsView').style.display = 'block';
+      document.getElementById('statusDot').style.background = '#22c55e';
+      document.getElementById('statusDot').title = `${allData.length} registros cargados`;
+    },
+    error: (err) => {
+      showError('Error al cargar datos: ' + err.message + '\n\nVerificá que la planilla esté publicada como CSV.');
+    }
+  });
+}
+
+function showError(msg) {
+  document.getElementById('loadingState').style.display = 'none';
+  const el = document.getElementById('errorState');
+  el.textContent = msg;
+  el.style.display = 'block';
+  document.getElementById('statusDot').style.background = '#ef4444';
+}
+
+// ── FILTERS ──────────────────────────────────────────────────────────────
+function buildFilters() {
+  const empresas = [...new Set(allData.map(r => r['EMPRESA']).filter(Boolean))].sort();
+  const campanas = [...new Set(allData.map(r => r['Campaña']).filter(Boolean))].sort().reverse();
+  const cultivos = [...new Set(allData.map(r => r['Cultivo']).filter(Boolean))].sort();
+
+  fillSelect('fEmpresa', empresas);
+  fillSelect('fCampana', campanas);
+  fillSelect('fCultivo', cultivos);
+}
+
+function fillSelect(id, values) {
+  const sel = document.getElementById(id);
+  const current = sel.value;
+  while (sel.options.length > 1) sel.remove(1);
+  values.forEach(v => {
+    const o = document.createElement('option');
+    o.value = v; o.textContent = v;
+    sel.appendChild(o);
+  });
+  if (current) sel.value = current;
+}
+
+function applyFilters() {
+  const search = document.getElementById('search').value.toLowerCase();
+  const empresa = document.getElementById('fEmpresa').value;
+  const campana = document.getElementById('fCampana').value;
+  const cultivo = document.getElementById('fCultivo').value;
+
+  filtered = allData.filter(r => {
+    if (empresa && r['EMPRESA'] !== empresa) return false;
+    if (campana && r['Campaña'] !== campana) return false;
+    if (cultivo && r['Cultivo'] !== cultivo) return false;
+    if (search) {
+      const haystack = [r['Campo'], r['Lote'], r['Genética'], r['Ambiente Regional'], r['EMPRESA'], r['Responsable Registro']]
+        .join(' ').toLowerCase();
+      if (!haystack.includes(search)) return false;
+    }
+    return true;
+  });
+
+  sortData();
+  renderTable();
+  renderCards();
+  document.getElementById('countBadge').innerHTML =
+    `<strong>${filtered.length}</strong> / ${allData.length} registros`;
+}
+
+// ── SORT ─────────────────────────────────────────────────────────────────
+function sortBy(col) {
+  if (sortCol === col) sortAsc = !sortAsc;
+  else { sortCol = col; sortAsc = true; }
+  document.querySelectorAll('th').forEach(t => t.classList.remove('sorted'));
+  sortData();
+  renderTable();
+}
+
+function sortData() {
+  filtered.sort((a, b) => {
+    let va = a[sortCol] || '', vb = b[sortCol] || '';
+    const na = parseFloat(va.replace(',', '.')), nb = parseFloat(vb.replace(',', '.'));
+    if (!isNaN(na) && !isNaN(nb)) return sortAsc ? na - nb : nb - na;
+    return sortAsc ? va.localeCompare(vb, 'es') : vb.localeCompare(va, 'es');
+  });
+}
+
+// ── RENDER TABLE ─────────────────────────────────────────────────────────
+function renderTable() {
+  const tbody = document.getElementById('tableBody');
+  tbody.innerHTML = '';
+
+  if (filtered.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="11" style="text-align:center;padding:40px;color:var(--text3);font-family:'IBM Plex Mono',monospace;font-size:12px;">Sin resultados para los filtros aplicados</td></tr>`;
+    return;
+  }
+
+  filtered.forEach((row, i) => {
+    const tr = document.createElement('tr');
+    if (activeIdx !== null && allData.indexOf(row) === activeIdx) tr.classList.add('active-row');
+    tr.onclick = () => openDrawer(row, allData.indexOf(row));
+
+    const cultTag = cultivoTag(row['Cultivo']);
+    const rinde = row['Rendimiento (kg/ha sembrada)'];
+    const rindeHtml = rinde
+      ? `<span class="rinde-val">${fmt(rinde)}</span>`
+      : `<span class="rinde-empty">—</span>`;
+
+    tr.innerHTML = `
+      <td class="mono">${row['ID Registro'] || '—'}</td>
+      <td class="primary">${row['EMPRESA'] || '—'}</td>
+      <td>${row['Campo'] || '—'}</td>
+      <td class="mono">${row['Lote'] || '—'}</td>
+      <td class="mono">${row['Campaña'] || '—'}</td>
+      <td>${cultTag}</td>
+      <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis">${row['Ambiente Regional'] || '—'}</td>
+      <td class="mono">${fmt(row['Superficie Sembrada']) || '—'}</td>
+      <td>${row['Antecesor'] || '—'}</td>
+      <td class="mono">${row['Fecha de Siembra'] || '—'}</td>
+      <td>${rindeHtml}</td>
+    `;
+    tbody.appendChild(tr);
+  });
+}
+
+// ── RENDER CARDS ─────────────────────────────────────────────────────────
+function renderCards() {
+  const cv = document.getElementById('cardsView');
+  cv.innerHTML = '';
+  filtered.forEach(row => {
+    const div = document.createElement('div');
+    div.className = 'card';
+    if (activeIdx !== null && allData.indexOf(row) === activeIdx) div.classList.add('active-card');
+    div.onclick = () => openDrawer(row, allData.indexOf(row));
+    const rinde = row['Rendimiento (kg/ha sembrada)'];
+    div.innerHTML = `
+      <div class="card-top">
+        <div class="card-title">${row['Campo'] || '—'} · ${row['Lote'] || ''}</div>
+        <div class="card-id">#${row['ID Registro'] || '?'}</div>
+      </div>
+      ${cultivoTag(row['Cultivo'])}
+      <div class="card-row" style="margin-top:10px">
+        <div class="card-kv"><span class="card-k">Empresa</span><span class="card-v">${row['EMPRESA'] || '—'}</span></div>
+        <div class="card-kv"><span class="card-k">Campaña</span><span class="card-v">${row['Campaña'] || '—'}</span></div>
+        <div class="card-kv"><span class="card-k">Sup.</span><span class="card-v">${fmt(row['Superficie Sembrada']) || '—'} ha</span></div>
+        <div class="card-kv"><span class="card-k">Rinde</span><span class="card-v">${rinde ? fmt(rinde) + ' kg/ha' : '—'}</span></div>
+      </div>
+    `;
+    cv.appendChild(div);
+  });
+}
+
+// ── DRAWER ───────────────────────────────────────────────────────────────
+function openDrawer(row, idx) {
+  activeIdx = idx;
+  renderTable();
+  renderCards();
+
+  document.getElementById('dId').textContent = `Registro #${row['ID Registro'] || '?'} · ${row['Campaña'] || ''}`;
+  document.getElementById('dTitle').textContent = `${row['Campo'] || '—'} — ${row['Lote'] || ''}`;
+  document.getElementById('dSub').textContent = `${row['EMPRESA'] || ''} · ${row['Cultivo'] || ''} ${row['Antecesor'] ? '/ Ant: ' + row['Antecesor'] : ''}`;
+
+  const body = document.getElementById('drawerBody');
+  body.innerHTML = '';
+
+  const sections = [
+    {
+      icon: '🏢', title: 'Identificación',
+      fields: [
+        ['Empresa', row['EMPRESA']],
+        ['Cliente SOS', row['Cliente SOS']],
+        ['Campo', row['Campo']],
+        ['Lote', row['Lote']],
+        ['Campaña', row['Campaña']],
+        ['Grupo CREA', row['Grupo CREA']],
+        ['Coordinador', row['Coordinador']],
+        ['Responsable', row['Responsable Registro']],
+        ['ADM', row['ADM']],
+        ['Tenencia', row['Tenencia']],
+        ['Coordenadas', row['Coordenadas'], true],
+      ]
+    },
+    {
+      icon: '🗺️', title: 'Ambiente y Suelo',
+      fields: [
+        ['Ambiente Regional', row['Ambiente Regional']],
+        ['RIDZO', row['RIDZO']],
+        ['Sup. Sembrada (ha)', row['Superficie Sembrada']],
+        ['Arena (%)', row['Arena']],
+        ['pH', row['pH']],
+        ['M.O. (%)', row['M.O.']],
+        ['P (Bray)', row['P']],
+        ['Año análisis P', row['Año análisis P']],
+        ['SO4 / Zn', row['SO4_Zn']],
+        ['Prof. Napa (m)', row['Profundidad de Napa']],
+      ]
+    },
+    {
+      icon: '🌱', title: 'Siembra',
+      fields: [
+        ['Cultivo', row['Cultivo']],
+        ['Sub-grupo', row['Sub Grupo de Cultivo']],
+        ['Destino', row['Destino']],
+        ['Antecesor', row['Antecesor']],
+        ['Rinde Esperado (kg/ha)', row['Rinde Esperado (kg/ha)']],
+        ['Orden Siembra', row['Orden de Siembra']],
+        ['Fecha Siembra', row['Fecha de Siembra']],
+        ['Espaciamiento (cm)', row['Espaciamiento (cm)']],
+        ['Semillero', row['Semillero']],
+        ['Genética', row['Genética']],
+        ['Calibre', row['Calibre']],
+        ['Plantas objetivo (pl/m²)', row['Plantas objetivo (Plantas/m2)']],
+        ['Poder germinativo', row['Poder germinativo']],
+        ['Peso 1000 semillas (g)', row['Peso 1000 semillas']],
+        ['Coef. logro estimado', row['Coef de logro estimado']],
+        ['Densidad calc. (kg/ha)', row['Densidad Siembra Calculada']],
+        ['Densidad recom. (kg/ha)', row['Densidad siembra Recomendada']],
+        ['Pob. lograda (pl/m²)', row['Poblacion Lograda (Plantas/m2)']],
+        ['Coef. logro real', row['Coeficiente de logro real']],
+      ]
+    },
+    {
+      icon: '🧪', title: 'Análisis de Nitrógeno',
+      fields: [
+        ['Info análisis N', row['INFO ANÁLISIS N']],
+        ['NO₃ 0–20 cm', row['NO3_ (0-20)']],
+        ['NO₃ 20–40 cm', row['NO3_ (20-40)']],
+        ['NO₃ 40–60 cm', row['NO3_ (40-60)']],
+        ['N suelo 0–60 cm (kg/ha)', row['Nitrogeno suelo (0-60 cm)']],
+        ['N objetivo (kg/ha)', row['Nitrogeno Objetivo']],
+      ]
+    },
+    {
+      icon: '💊', title: 'Fertilización',
+      fert: true,
+      prods: [
+        { n: 'Producto 1 (P)', nombre: row['Fertilizante P Producto 1'], pN: row['% N Producto 1'], pP: row['% P2O5 Producto 1'], pS: row['% S Producto 1'], pZn: row['% Zn Producto 1'], dosis: row['Dosis Fert. P Producto 1'], momento: row['Momento 1'], forma: row['Forma 1'] },
+        { n: 'Producto 2 (N)', nombre: row['Fertilizante N Producto 2'], pN: row['% N Producto 2'], pP: row['% P2O5 Producto 2'], pS: row['% S Producto 2'], pZn: row['% Zn Producto 2'], dosis: row['Dosis 2'], momento: row['Momento 2'], forma: row['Forma 2'] },
+        { n: 'Producto 3', nombre: row['Producto 3'], pN: row['% N Producto 3'], pP: row['% P2O5 Producto 3'], pS: row['% S Producto 3'], pZn: row['% Zn Producto 3'], dosis: row['Dosis 3'], momento: row['Momento 3'], forma: row['Forma 3'] },
+        { n: 'Producto 4', nombre: row['Producto 4'], pN: row['% N Producto 4'], pP: row['% P2O5 Producto 4'], pS: row['% S Producto 4'], pZn: row['% Zn Producto 4'], dosis: row['Dosis 4'], momento: row['Momento 4'], forma: row['Forma 4'] },
+      ],
+      summary: [
+        ['kg N Fertilizante', row['kg N Fertilizante']],
+        ['N alcanzado real', row['N alcanzado real']],
+        ['kg P Fertilizante', row['kg P Fertilizante']],
+        ['P (Bray) Alcanzado', row['P (Bray) Alcanzado']],
+        ['Balance P', row['Balance P']],
+      ]
+    },
+    {
+      icon: '🦟', title: 'Adversidades',
+      fields: [
+        ['Adversidad I', row['Adversidad I']],
+        ['Daño I', row['Daño I']],
+        ['Adversidad II', row['Adversidad II']],
+        ['Daño II', row['Daño II']],
+      ]
+    },
+    {
+      icon: '🌾', title: 'Cosecha',
+      fields: [
+        ['Nivel información', row['Nivel de Información']],
+        ['Fecha Cosecha', row['Fecha Cosecha']],
+        ['Superficie Cosechada (ha)', row['Superficie Cosechada']],
+        ['Rendimiento grano seco (kg/ha cosec.)', row['Rendimiento Grano Seco (kg/ha cosechada)']],
+        ['Rendimiento (kg/ha sembrada)', row['Rendimiento (kg/ha sembrada)'], false, true],
+        ['Kg Totales', row['Kg Totales']],
+        ['Humedad cosecha (%)', row['Humedad de cosecha']],
+        ['Peso 1000 granos (g)', row['Peso de 1000 granos']],
+        ['Peso Hectolítrico', row['Peso Hectolítrico']],
+        ['Proteína (%)', row['Proteína']],
+        ['Materia Grasa (%)', row['Materia Grasa']],
+      ]
+    },
+    {
+      icon: '📦', title: 'Totales por Lote',
+      fields: [
+        ['Nº Bolsas necesarias', row['NRO BOLSAS NECESARIAS Mz/Gi']],
+        ['kg Semilla total', row['kg Semilla total']],
+        ['kg Fert. P necesarios', row['KG FERT P NECESARIOS']],
+        ['kg Fert. 2 necesarios', row['KG FERT 2 NECESARIOS']],
+        ['kg Fert. 3 necesarios', row['KG FERT 3 NECESARIOS']],
+        ['kg Fert. 4 necesarios', row['KG FERT 4 NECESARIOS']],
+      ]
+    },
+    {
+      icon: '📝', title: 'Observaciones',
+      fields: [
+        ['Observaciones', row['Observaciones'], true],
+        ['Ambiente', row['Ambiente'], true],
+        ['Lote-Cult-Ant', row['Lote-Cult-Ant'], true],
+      ]
+    },
+  ];
+
+  sections.forEach((sec, si) => {
+    const secEl = document.createElement('div');
+    secEl.className = 'dsec';
+
+    const hdr = document.createElement('div');
+    hdr.className = 'dsec-header';
+    hdr.innerHTML = `<span class="dsec-icon">${sec.icon}</span><span class="dsec-title">${sec.title}</span><span class="dsec-arrow">▾</span>`;
+    hdr.onclick = () => {
+      hdr.classList.toggle('collapsed');
+      bdy.classList.toggle('collapsed');
+    };
+
+    const bdy = document.createElement('div');
+    bdy.className = 'dsec-body';
+
+    if (sec.fert) {
+      // Fertilizantes table
+      const activeProd = sec.prods.filter(p => p.nombre);
+      if (activeProd.length > 0) {
+        const tWrap = document.createElement('div');
+        tWrap.className = 'fert-table';
+        tWrap.innerHTML = `
+          <table>
+            <thead><tr>
+              <th></th><th>Producto</th><th>N%</th><th>P%</th><th>S%</th><th>Dosis</th><th>Momento</th><th>Forma</th>
+            </tr></thead>
+            <tbody>
+              ${activeProd.map(p => `<tr>
+                <td class="mono" style="color:var(--text3)">${p.n}</td>
+                <td class="primary">${p.nombre || '—'}</td>
+                <td class="mono">${p.pN || '—'}</td>
+                <td class="mono">${p.pP || '—'}</td>
+                <td class="mono">${p.pS || '—'}</td>
+                <td class="mono">${p.dosis || '—'}</td>
+                <td>${p.momento || '—'}</td>
+                <td>${p.forma || '—'}</td>
+              </tr>`).join('')}
+            </tbody>
+          </table>
+        `;
+        bdy.appendChild(tWrap);
+      }
+      // Summary
+      sec.summary.forEach(([label, val]) => {
+        const f = document.createElement('div');
+        f.className = 'dfield';
+        f.innerHTML = `<span class="dfield-label">${label}</span><span class="dfield-val ${val ? '' : 'empty'}">${val || '—'}</span>`;
+        bdy.appendChild(f);
+      });
+    } else {
+      sec.fields.forEach(([label, val, full, highlight]) => {
+        const f = document.createElement('div');
+        f.className = 'dfield' + (full ? ' full' : '');
+        const cls = highlight ? 'highlight' : (val ? '' : 'empty');
+        f.innerHTML = `<span class="dfield-label">${label}</span><span class="dfield-val ${cls}">${val || '—'}</span>`;
+        bdy.appendChild(f);
+      });
+    }
+
+    secEl.appendChild(hdr);
+    secEl.appendChild(bdy);
+    body.appendChild(secEl);
+  });
+
+  document.getElementById('overlay').classList.add('open');
+  document.getElementById('drawer').classList.add('open');
+  document.body.style.overflow = 'hidden';
+}
+
+function closeDrawer() {
+  document.getElementById('overlay').classList.remove('open');
+  document.getElementById('drawer').classList.remove('open');
+  document.body.style.overflow = '';
+  activeIdx = null;
+  renderTable();
+  renderCards();
+}
+
+// ── HELPERS ──────────────────────────────────────────────────────────────
+function cultivoTag(cultivo) {
+  if (!cultivo) return '<span class="tag tag-other">—</span>';
+  const c = cultivo.toLowerCase();
+  let cls = 'tag-other';
+  if (c.includes('soja')) cls = 'tag-soja';
+  else if (c.includes('maiz') || c.includes('maíz')) cls = 'tag-maiz';
+  else if (c.includes('trigo')) cls = 'tag-trigo';
+  else if (c.includes('girasol')) cls = 'tag-girasol';
+  else if (c.includes('cebada')) cls = 'tag-cebada';
+  return `<span class="tag ${cls}">${cultivo}</span>`;
+}
+
+function fmt(val) {
+  if (!val) return '';
+  const n = parseFloat(String(val).replace(',', '.'));
+  if (isNaN(n)) return val;
+  return n.toLocaleString('es-AR');
+}
+
+// Keyboard close
+document.addEventListener('keydown', e => { if (e.key === 'Escape') closeDrawer(); });
+</script>
+</body>
+</html>
