@@ -422,7 +422,10 @@ td.mono { font-family: 'IBM Plex Mono', monospace; font-size: 12px; }
   <!-- PLAN DE SIEMBRA -->
   <div id="tabPlanSiembra" style="display:none">
     <div class="sup-card">
-      <div class="sup-card-title"><span>📋</span> Plan de Siembra</div>
+      <div class="sup-card-title" style="justify-content:space-between">
+        <span style="display:flex;align-items:center;gap:8px"><span>📋</span> Plan de Siembra</span>
+        <button class="btn-new" onclick="exportPlanExcel()" style="font-size:12px;padding:5px 14px">⬇ Exportar Excel</button>
+      </div>
       <div class="pivot-wrap">
         <table class="pivot-tbl" id="planTable">
           <thead><tr>
@@ -437,8 +440,7 @@ td.mono { font-family: 'IBM Plex Mono', monospace; font-size: 12px; }
             <th onclick="sortPlan('Densidad siembra Recomendada')" class="num">Dens. Recom.</th>
             <th onclick="sortPlan('Dosis Fert. P Producto 1')" class="num">Dosis Fert. P (kg/ha)</th>
             <th onclick="sortPlan('KG FERT P NECESARIOS')" class="num">kg Fert. P total</th>
-            <th onclick="sortPlan('kg Semilla total')" class="num">kg Semilla total</th>
-            <th onclick="sortPlan('NRO BOLSAS NECESARIAS Mz/Gi')" class="num">Bolsas</th>
+            <th id="planSemillaHeader" class="num">kg Semilla total</th>
           </tr></thead>
           <tbody id="planBody"></tbody>
         </table>
@@ -679,11 +681,9 @@ const SUMMARY_TABS = ['superficies', 'porlote', 'suelo', 'genetica', 'plansiembr
 function switchTab(tab) {
   activeTab = tab;
   // Botones
-  ['registros','superficies','porlote','suelo','genetica'].forEach(t => {
-    const id = 'tabBtn' + t.charAt(0).toUpperCase() + t.slice(1);
-    // Mapeo especial para camelCase
-    const btnMap = { registros:'tabBtnRegistros', superficies:'tabBtnSuperficies', porlote:'tabBtnPorLote', suelo:'tabBtnSuelo', genetica:'tabBtnGenetica' };
-    document.getElementById(btnMap[t])?.classList.toggle('active', t === tab);
+  const btnMap = { registros:'tabBtnRegistros', superficies:'tabBtnSuperficies', porlote:'tabBtnPorLote', suelo:'tabBtnSuelo', genetica:'tabBtnGenetica', plansiembra:'tabBtnPlanSiembra' };
+  Object.entries(btnMap).forEach(([t, id]) => {
+    document.getElementById(id)?.classList.toggle('active', t === tab);
   });
   // Contenido
   document.getElementById('tabRegistros').style.display  = tab === 'registros'  ? '' : 'none';
@@ -1065,6 +1065,33 @@ function renderGenetica() {
 // ── PLAN DE SIEMBRA ───────────────────────────────────────────────────
 let planSortCol = 'Orden de Siembra', planSortAsc = true;
 
+// Cultivos que usan BOLSAS como unidad de semilla (en lugar de kg)
+const CULTIVOS_BOLSAS = ['girasol','maiz','maíz','maiz 2da','maíz 2da','maiz tardio','maíz tardio','maiz tardío','maíz tardío'];
+
+function cultivoUsaBolsas(cultivo) {
+  if (!cultivo) return false;
+  const lc = cultivo.toLowerCase().trim();
+  return CULTIVOS_BOLSAS.some(c => lc === c || lc.startsWith(c));
+}
+
+function getPlanSemillaMode(data) {
+  // Detecta el modo según los cultivos en el filtro activo
+  const cultivosSel = [...(SUP_SEL.cultivo || new Set())];
+  if (cultivosSel.length > 0) {
+    // Si hay filtro de cultivo específico, usar ese
+    const todosUsanBolsas = cultivosSel.every(c => cultivoUsaBolsas(c));
+    const ningunoUsaBolsas = cultivosSel.every(c => !cultivoUsaBolsas(c));
+    if (todosUsanBolsas) return 'bolsas';
+    if (ningunoUsaBolsas) return 'kg';
+  }
+  // Sin filtro, ver si hay mezcla
+  const cultivos = [...new Set(data.map(r => r['Cultivo']).filter(Boolean))];
+  const tieneKg     = cultivos.some(c => !cultivoUsaBolsas(c));
+  const tieneBolsas = cultivos.some(c => cultivoUsaBolsas(c));
+  if (tieneBolsas && !tieneKg) return 'bolsas';
+  return 'kg'; // default o mixto → mostrar kg
+}
+
 function sortPlan(col) {
   planSortAsc = planSortCol === col ? !planSortAsc : true;
   planSortCol = col;
@@ -1083,25 +1110,46 @@ function renderPlanSiembra() {
 
   const tbody = document.getElementById('planBody');
   if (!data.length) {
-    tbody.innerHTML = '<tr><td colspan="13" style="text-align:center;padding:40px;color:var(--text3)">Sin resultados</td></tr>';
+    tbody.innerHTML = '<tr><td colspan="12" style="text-align:center;padding:40px;color:var(--text3)">Sin resultados</td></tr>';
     return;
   }
 
-  let totSup = 0, totFertP = 0, totSemilla = 0, totBolsas = 0;
+  // Determinar qué columna de semilla mostrar
+  const modo = getPlanSemillaMode(data);
+  const usaBolsas = modo === 'bolsas';
+  const headerSemilla = document.getElementById('planSemillaHeader');
+  if (headerSemilla) {
+    headerSemilla.textContent = usaBolsas ? 'Bolsas necesarias' : 'kg Semilla total';
+    headerSemilla.onclick = () => sortPlan(usaBolsas ? 'NRO BOLSAS NECESARIAS Mz/Gi' : 'kg Semilla total');
+  }
+
+  let totSup = 0, totFertP = 0, totSemilla = 0;
 
   const rows = data.map(r => {
     const vn = key => { const n = parseFloat(String(r[key]||'').replace(',','.')); return isNaN(n) ? null : n; };
     const vs = key => (r[key] && hasVal(r[key])) ? r[key] : '—';
 
-    const sup     = vn('Superficie Sembrada');
-    const fertP   = vn('KG FERT P NECESARIOS');
-    const semilla = vn('kg Semilla total');
-    const bolsas  = vn('NRO BOLSAS NECESARIAS Mz/Gi');
+    const sup   = vn('Superficie Sembrada');
+    const fertP = vn('KG FERT P NECESARIOS');
 
-    if (sup)     totSup     += sup;
-    if (fertP)   totFertP   += fertP;
-    if (semilla) totSemilla += semilla;
-    if (bolsas)  totBolsas  += bolsas;
+    // Elegir columna de semilla según el cultivo de la fila
+    const esBolsas = cultivoUsaBolsas(r['Cultivo']);
+    let semVal = null;
+    if (usaBolsas) {
+      // Modo bolsas: mostrar bolsas para los que corresponde, kg para los demás
+      semVal = esBolsas ? vn('NRO BOLSAS NECESARIAS Mz/Gi') : vn('kg Semilla total');
+    } else {
+      // Modo kg: mostrar kg para todos
+      semVal = vn('kg Semilla total');
+    }
+
+    if (sup)    totSup    += sup;
+    if (fertP)  totFertP  += fertP;
+    if (semVal) totSemilla += semVal;
+
+    const semDisplay = semVal
+      ? (usaBolsas && esBolsas ? Math.round(semVal).toLocaleString('es-AR') : fmtHa(semVal))
+      : '—';
 
     return `<tr>
       <td class="num" style="font-weight:700;color:var(--text)">${vs('Orden de Siembra')}</td>
@@ -1115,21 +1163,123 @@ function renderPlanSiembra() {
       <td class="num">${vs('Densidad siembra Recomendada')}</td>
       <td class="num">${vs('Dosis Fert. P Producto 1')}</td>
       <td class="num">${fertP ? fmtHa(fertP) : '—'}</td>
-      <td class="num">${semilla ? fmtHa(semilla) : '—'}</td>
-      <td class="num">${bolsas ? Math.round(bolsas) : '—'}</td>
+      <td class="num">${semDisplay}</td>
     </tr>`;
   });
+
+  const totSemDisplay = usaBolsas
+    ? Math.round(totSemilla).toLocaleString('es-AR')
+    : fmtHa(totSemilla);
 
   rows.push(`<tr class="total-row">
     <td colspan="6" style="font-weight:700">TOTAL</td>
     <td class="num grand-total">${fmtHa(totSup)}</td>
     <td></td><td></td><td></td>
     <td class="num grand-total">${fmtHa(totFertP)}</td>
-    <td class="num grand-total">${fmtHa(totSemilla)}</td>
-    <td class="num grand-total">${Math.round(totBolsas)}</td>
+    <td class="num grand-total">${totSemDisplay}</td>
   </tr>`);
 
   tbody.innerHTML = rows.join('');
+}
+
+// ── EXPORTAR EXCEL ────────────────────────────────────────────────────
+function exportPlanExcel() {
+  const data = [...getSupFiltered()].sort((a, b) => {
+    const va = a[planSortCol] || '', vb = b[planSortCol] || '';
+    const na = parseFloat(String(va).replace(',','.')), nb = parseFloat(String(vb).replace(',','.'));
+    if (!isNaN(na) && !isNaN(nb)) return planSortAsc ? na - nb : nb - na;
+    return planSortAsc ? String(va).localeCompare(String(vb),'es') : String(vb).localeCompare(String(va),'es');
+  });
+  if (!data.length) { alert('No hay datos para exportar.'); return; }
+
+  const modo = getPlanSemillaMode(data);
+  const usaBolsas = modo === 'bolsas';
+  const colSemLabel = usaBolsas ? 'Bolsas necesarias' : 'kg Semilla total';
+
+  const vn = (r, key) => { const n = parseFloat(String(r[key]||'').replace(',','.')); return isNaN(n) ? null : n; };
+  const vs = (r, key) => (r[key] && hasVal(r[key])) ? r[key] : '';
+
+  // Filtros activos para el encabezado
+  const filtrosActivos = [];
+  if (SUP_SEL.campana.size) filtrosActivos.push('Campaña: ' + [...SUP_SEL.campana].join(', '));
+  if (SUP_SEL.empresa.size) filtrosActivos.push('Empresa: ' + [...SUP_SEL.empresa].join(', '));
+  if (SUP_SEL.campo.size)   filtrosActivos.push('Campo: '   + [...SUP_SEL.campo].join(', '));
+  if (SUP_SEL.cultivo.size) filtrosActivos.push('Cultivo: ' + [...SUP_SEL.cultivo].join(', '));
+  if (SUP_SEL.destino.size) filtrosActivos.push('Destino: ' + [...SUP_SEL.destino].join(', '));
+
+  let totSup = 0, totFertP = 0, totSem = 0;
+  const filas = data.map(r => {
+    const sup   = vn(r, 'Superficie Sembrada');
+    const fertP = vn(r, 'KG FERT P NECESARIOS');
+    const esBolsas = cultivoUsaBolsas(r['Cultivo']);
+    const semVal = usaBolsas
+      ? (esBolsas ? vn(r, 'NRO BOLSAS NECESARIAS Mz/Gi') : vn(r, 'kg Semilla total'))
+      : vn(r, 'kg Semilla total');
+    if (sup)    totSup    += sup;
+    if (fertP)  totFertP  += fertP;
+    if (semVal) totSem    += semVal;
+    return [
+      vs(r,'Orden de Siembra'), vs(r,'Campo'), vs(r,'Lote'), r['Cultivo']||'',
+      vs(r,'Ambiente Regional'), vs(r,'Genética'), vs(r,'Fertilizante P Producto 1'),
+      sup||'', vs(r,'Espaciamiento (cm)'), vs(r,'Densidad siembra Recomendada'),
+      vs(r,'Dosis Fert. P Producto 1'), fertP||'', semVal||''
+    ];
+  });
+
+  // Construir HTML con estilos inline para máxima compatibilidad con Excel
+  const borderStyle = 'border:1px solid #d0d7de';
+  const thStyle = `background:#1a5c30;color:#ffffff;font-weight:bold;padding:8px 12px;${borderStyle};white-space:nowrap;font-size:11pt`;
+  const tdStyle = `padding:6px 12px;${borderStyle};font-size:10pt`;
+  const tdNum = `${tdStyle};text-align:right`;
+  const tdTot = `${tdStyle};background:#f0fdf4;font-weight:bold;text-align:right;color:#15803d`;
+  const tdTotLabel = `${tdStyle};background:#f0fdf4;font-weight:bold;color:#15803d`;
+
+  const headers = ['Orden','Campo','Lote','Cultivo','Ambiente','Genética','Fert. P Producto',
+    'Sup. (ha)','Espac. (cm)','Dens. Recom.','Dosis Fert. P (kg/ha)',`kg Fert. P total`, colSemLabel];
+
+  const fecha = new Date().toLocaleDateString('es-AR');
+  const filtrosTxt = filtrosActivos.length ? filtrosActivos.join(' | ') : 'Sin filtros aplicados';
+
+  let html = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40">
+<head><meta charset="UTF-8">
+<!--[if gte mso 9]><xml><x:ExcelWorkbook><x:ExcelWorksheets><x:ExcelWorksheet>
+<x:Name>Plan de Siembra</x:Name><x:WorksheetOptions><x:DisplayGridlines/></x:WorksheetOptions>
+</x:ExcelWorksheet></x:ExcelWorksheets></x:ExcelWorkbook></xml><![endif]-->
+</head><body>
+<table style="border-collapse:collapse;font-family:Calibri,Arial,sans-serif;width:100%">
+<tr><td colspan="${headers.length}" style="background:#1a5c30;color:#ffffff;font-size:14pt;font-weight:bold;padding:12px 16px;border:1px solid #1a5c30">🌾 Plan de Siembra — SOS Agro</td></tr>
+<tr><td colspan="${headers.length}" style="background:#f0fdf4;color:#15803d;font-size:9pt;padding:6px 12px;border:1px solid #d0d7de">Generado: ${fecha} | ${filtrosTxt}</td></tr>
+<tr><td colspan="${headers.length}" style="padding:4px"> </td></tr>
+<tr>${headers.map(h => `<th style="${thStyle}">${h}</th>`).join('')}</tr>`;
+
+  filas.forEach((f, i) => {
+    const bg = i % 2 === 0 ? '' : 'background:#f8fafb;';
+    const td = (v, num=false) => `<td style="${num ? tdNum : tdStyle};${bg}">${v ?? ''}</td>`;
+    const tdN = v => td(typeof v === 'number' ? v.toLocaleString('es-AR',{minimumFractionDigits:0,maximumFractionDigits:2}) : v, true);
+    html += `<tr>
+      ${td(f[0])}${td(f[1])}${td(f[2])}${td(f[3])}${td(f[4])}${td(f[5])}${td(f[6])}
+      ${tdN(f[7])}${tdN(f[8])}${tdN(f[9])}${tdN(f[10])}${tdN(f[11])}${tdN(f[12])}
+    </tr>`;
+  });
+
+  const fmtN = v => v ? v.toLocaleString('es-AR',{minimumFractionDigits:0,maximumFractionDigits:2}) : '0';
+  html += `<tr>
+    <td colspan="7" style="${tdTotLabel}">TOTAL</td>
+    <td style="${tdTot}">${fmtN(totSup)}</td>
+    <td style="${tdTot}"></td><td style="${tdTot}"></td><td style="${tdTot}"></td>
+    <td style="${tdTot}">${fmtN(totFertP)}</td>
+    <td style="${tdTot}">${fmtN(totSem)}</td>
+  </tr>`;
+  html += `</table></body></html>`;
+
+  const blob = new Blob(['\uFEFF' + html], { type: 'application/vnd.ms-excel;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  const campana = SUP_SEL.campana.size ? [...SUP_SEL.campana][0] : 'Plan';
+  a.download = `SOS_Agro_PlanSiembra_${campana}_${fecha.replace(/\//g,'-')}.xls`;
+  a.click();
+  URL.revokeObjectURL(url);
 }
 
 // ── APPLY FILTERS ─────────────────────────────────────────────────────
