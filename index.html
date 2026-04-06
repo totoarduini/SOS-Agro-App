@@ -489,10 +489,6 @@ td.mono { font-family: 'IBM Plex Mono', monospace; font-size: 12px; }
             </table>
           </div>
         </div>
-        <div class="sup-card" id="fertStatsCard">
-          <div class="sup-card-title"><span>📊</span> Totales</div>
-          <div id="fertStatsBody"></div>
-        </div>
       </div>
 
     </div>
@@ -1279,14 +1275,6 @@ function renderPlanSiembra() {
 // ── FERTILIZANTE TOTAL ────────────────────────────────────────────────
 let fertSortCol = 'Campo', fertSortAsc = true;
 
-// Columnas de productos fertilizantes: nombre en CSV → kg en CSV
-const FERT_PROD_COLS = [
-  { nom: 'Fertilizante P Producto 1', kg: 'KG FERT P NECESARIOS'  },
-  { nom: 'Fertilizante N Producto 2', kg: 'KG FERT 2 NECESARIOS'  },
-  { nom: 'Producto 3',                kg: 'KG FERT 3 NECESARIOS'  },
-  { nom: 'Producto 4',                kg: 'KG FERT 4 NECESARIOS'  },
-];
-
 function sortFert(col) {
   fertSortAsc = fertSortCol === col ? !fertSortAsc : true;
   fertSortCol = col;
@@ -1340,19 +1328,16 @@ function renderFertilizante() {
     </tr>`;
   }
 
-  // ── Tabla resumen por fertilizante ────────────────────────────────
-  // Agrupar kg por nombre de producto (todos los slots)
+  // ── Tabla resumen: agrupar por Fertilizante P Producto 1, sumar KG FERT P NECESARIOS
   const resumen = {};
   data.forEach(r => {
-    FERT_PROD_COLS.forEach(({ nom, kg }) => {
-      const nombre = getF(r, nom);
-      if (!nombre) return;
-      const kgRaw = getF(r, kg);
-      const kgVal = kgRaw ? parseFloat(String(kgRaw).replace(',','.')) : NaN;
-      if (isNaN(kgVal) || kgVal <= 0) return;
-      if (!resumen[nombre]) resumen[nombre] = 0;
-      resumen[nombre] += kgVal;
-    });
+    const nombre = getF(r, 'Fertilizante P Producto 1');
+    if (!nombre) return;
+    const kgRaw = getF(r, 'KG FERT P NECESARIOS');
+    const kgVal = kgRaw ? parseFloat(String(kgRaw).replace(',','.')) : NaN;
+    if (isNaN(kgVal) || kgVal <= 0) return;
+    if (!resumen[nombre]) resumen[nombre] = 0;
+    resumen[nombre] += kgVal;
   });
 
   const resRows = Object.entries(resumen).sort((a, b) => b[1] - a[1]);
@@ -1371,18 +1356,6 @@ function renderFertilizante() {
         <td class="num grand-total">${fmtHa(totalKgAll)}</td>
       </tr>`;
   }
-
-  // ── Stats ──────────────────────────────────────────────────────────
-  const statsBody = document.getElementById('fertStatsBody');
-  const lotesCon = data.filter(r => { const v = getF(r,'KG FERT P NECESARIOS'); return v && parseFloat(String(v).replace(',','.')) > 0; }).length;
-  statsBody.innerHTML = [
-    ['Lotes con fert. P', lotesCon],
-    ['Lotes totales', data.length],
-    ['Productos distintos', resRows.length],
-  ].map(([label, val]) => `<div class="sup-stat">
-    <span class="sup-stat-label">${label}</span>
-    <span class="sup-stat-val" style="font-size:18px">${val}</span>
-  </div>`).join('');
 }
 
 // ── RECOMENDACIÓN FERTILIZACIÓN N ────────────────────────────────────
