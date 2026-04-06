@@ -266,8 +266,11 @@ td.mono { font-family: 'IBM Plex Mono', monospace; font-size: 12px; }
       <div class="logo-text">SOS<span>Agro</span> · Registros de Campo</div>
     </div>
     <div class="tab-nav">
-      <button class="tab-btn active" id="tabBtnRegistros" onclick="switchTab('registros')">📋 Registros</button>
+      <button class="tab-btn active" id="tabBtnRegistros"   onclick="switchTab('registros')">📋 Registros</button>
       <button class="tab-btn" id="tabBtnSuperficies" onclick="switchTab('superficies')">📐 Superficies</button>
+      <button class="tab-btn" id="tabBtnPorLote"     onclick="switchTab('porlote')">🗂️ Por Lote</button>
+      <button class="tab-btn" id="tabBtnSuelo"       onclick="switchTab('suelo')">🧪 Suelo</button>
+      <button class="tab-btn" id="tabBtnGenetica"    onclick="switchTab('genetica')">🌱 Genética</button>
     </div>
     <div class="header-right">
       <div class="status-pill">
@@ -287,7 +290,7 @@ td.mono { font-family: 'IBM Plex Mono', monospace; font-size: 12px; }
     <div class="count-badge" id="countBadge"></div>
   </div>
 
-  <div class="filters-bar" id="filtersSuperficies" style="display:none">
+  <div class="filters-bar" id="filtersResumenes" style="display:none">
     <div id="supFilterDropdowns" style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;"></div>
     <div class="count-badge" id="supCountBadge"></div>
   </div>
@@ -329,32 +332,89 @@ td.mono { font-family: 'IBM Plex Mono', monospace; font-size: 12px; }
 
   <div id="tabSuperficies" style="display:none; padding: 0;">
     <div class="sup-layout">
-      <!-- Tabla pivot -->
       <div class="sup-card">
         <div class="sup-card-title"><span>📐</span> Superficie por Cultivo y Destino</div>
         <div class="pivot-wrap">
           <table class="pivot-tbl" id="pivotTable"><tbody><tr><td style="padding:40px;text-align:center;color:var(--text3)">Cargando…</td></tr></tbody></table>
         </div>
       </div>
-      <!-- Panel derecho: stat + torta -->
       <div style="display:flex;flex-direction:column;gap:16px;">
         <div class="sup-card">
           <div class="sup-card-title"><span>📊</span> Total</div>
-          <div class="sup-stat" id="supStatTotal">
-            <span class="sup-stat-label">Superficie total</span>
-            <span class="sup-stat-val" id="supTotalHa">—</span>
-          </div>
-          <div class="sup-stat" id="supStatLotes">
-            <span class="sup-stat-label">Lotes</span>
-            <span class="sup-stat-val" id="supTotalLotes">—</span>
-          </div>
+          <div class="sup-stat"><span class="sup-stat-label">Superficie total</span><span class="sup-stat-val" id="supTotalHa">—</span></div>
+          <div class="sup-stat"><span class="sup-stat-label">Lotes</span><span class="sup-stat-val" id="supTotalLotes">—</span></div>
         </div>
         <div class="sup-card">
           <div class="sup-card-title"><span>🥧</span> Distribución por Cultivo</div>
-          <div class="chart-wrap">
-            <canvas id="pieChart" height="260"></canvas>
-          </div>
+          <div class="chart-wrap"><canvas id="pieChart" height="260"></canvas></div>
         </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- POR LOTE -->
+  <div id="tabPorLote" style="display:none">
+    <div class="sup-card">
+      <div class="sup-card-title"><span>🗂️</span> Detalle por Lote</div>
+      <div class="pivot-wrap">
+        <table class="pivot-tbl" id="loteTable">
+          <thead><tr>
+            <th onclick="sortLote('EMPRESA')">Empresa</th>
+            <th onclick="sortLote('Campo')">Campo</th>
+            <th onclick="sortLote('Lote')">Lote</th>
+            <th onclick="sortLote('Cultivo')">Cultivo</th>
+            <th onclick="sortLote('Antecesor')">Antecesor</th>
+            <th onclick="sortLote('Superficie Sembrada')" class="num">Sup. (ha)</th>
+          </tr></thead>
+          <tbody id="loteBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- SUELO -->
+  <div id="tabSuelo" style="display:none">
+    <div class="sup-card">
+      <div class="sup-card-title"><span>🧪</span> Análisis de Suelo — Fósforo</div>
+      <div class="pivot-wrap">
+        <table class="pivot-tbl" id="sueloTable">
+          <thead><tr>
+            <th onclick="sortSuelo('EMPRESA')">Empresa</th>
+            <th onclick="sortSuelo('Campo')">Campo</th>
+            <th onclick="sortSuelo('Lote')">Lote</th>
+            <th onclick="sortSuelo('Cultivo')">Cultivo</th>
+            <th onclick="sortSuelo('Arena')" class="num">Arena (%)</th>
+            <th onclick="sortSuelo('pH')" class="num">pH</th>
+            <th onclick="sortSuelo('M.O.')" class="num">M.O. (%)</th>
+            <th onclick="sortSuelo('P')" class="num">P Bray (ppm)</th>
+            <th onclick="sortSuelo('Año análisis P')" class="num">Año anál. P</th>
+          </tr></thead>
+          <tbody id="sueloBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
+  <!-- GENÉTICA -->
+  <div id="tabGenetica" style="display:none">
+    <div class="sup-layout">
+      <div class="sup-card">
+        <div class="sup-card-title"><span>🌱</span> Superficie por Genética</div>
+        <div class="pivot-wrap">
+          <table class="pivot-tbl" id="geneticaTable">
+            <thead><tr>
+              <th onclick="sortGenetica('gen')">Genética</th>
+              <th onclick="sortGenetica('cultivo')">Cultivo</th>
+              <th onclick="sortGenetica('ha')" class="num">Sup. (ha)</th>
+              <th onclick="sortGenetica('lotes')" class="num">Lotes</th>
+            </tr></thead>
+            <tbody id="geneticaBody"></tbody>
+          </table>
+        </div>
+      </div>
+      <div class="sup-card">
+        <div class="sup-card-title"><span>🥧</span> Distribución por Genética</div>
+        <div class="chart-wrap"><canvas id="pieChartGenetica" height="300"></canvas></div>
       </div>
     </div>
   </div>
@@ -587,17 +647,31 @@ function refreshAllDropdowns() {
 
 // ── TAB SWITCHING ─────────────────────────────────────────────────────
 let activeTab = 'registros';
+const SUMMARY_TABS = ['superficies', 'porlote', 'suelo', 'genetica'];
 
 function switchTab(tab) {
   activeTab = tab;
-  document.getElementById('tabBtnRegistros').classList.toggle('active', tab === 'registros');
-  document.getElementById('tabBtnSuperficies').classList.toggle('active', tab === 'superficies');
+  // Botones
+  ['registros','superficies','porlote','suelo','genetica'].forEach(t => {
+    const id = 'tabBtn' + t.charAt(0).toUpperCase() + t.slice(1);
+    // Mapeo especial para camelCase
+    const btnMap = { registros:'tabBtnRegistros', superficies:'tabBtnSuperficies', porlote:'tabBtnPorLote', suelo:'tabBtnSuelo', genetica:'tabBtnGenetica' };
+    document.getElementById(btnMap[t])?.classList.toggle('active', t === tab);
+  });
+  // Contenido
   document.getElementById('tabRegistros').style.display  = tab === 'registros'  ? '' : 'none';
   document.getElementById('tabSuperficies').style.display = tab === 'superficies' ? '' : 'none';
-  document.getElementById('filtersRegistros').style.display  = tab === 'registros'  ? '' : 'none';
-  document.getElementById('filtersSuperficies').style.display = tab === 'superficies' ? '' : 'none';
+  document.getElementById('tabPorLote').style.display     = tab === 'porlote'     ? '' : 'none';
+  document.getElementById('tabSuelo').style.display       = tab === 'suelo'       ? '' : 'none';
+  document.getElementById('tabGenetica').style.display    = tab === 'genetica'    ? '' : 'none';
+  // Filtros
+  document.getElementById('filtersRegistros').style.display = tab === 'registros' ? '' : 'none';
+  document.getElementById('filtersResumenes').style.display  = SUMMARY_TABS.includes(tab) ? '' : 'none';
   updateTopOffset();
   if (tab === 'superficies') renderSuperficies();
+  if (tab === 'porlote')     renderPorLote();
+  if (tab === 'suelo')       renderSuelo();
+  if (tab === 'genetica')    renderGenetica();
 }
 
 // ── SUPERFICIES FILTERS ───────────────────────────────────────────────
@@ -682,7 +756,10 @@ function onSupFilterChange(changedId) {
     refreshSupDropdown(fd);
   }
   refreshSupDropdown(SUP_FILTER_DEF[idx]);
-  renderSuperficies();
+  if (activeTab === 'superficies') renderSuperficies();
+  if (activeTab === 'porlote')     renderPorLote();
+  if (activeTab === 'suelo')       renderSuelo();
+  if (activeTab === 'genetica')    renderGenetica();
 }
 
 // ── SUPERFICIES: RENDER ───────────────────────────────────────────────
@@ -811,6 +888,149 @@ function fmtHa(n) {
   if (!n) return '0';
   return n.toLocaleString('es-AR', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
 }
+
+// ── POR LOTE ──────────────────────────────────────────────────────────
+let loteSortCol = 'Campo', loteSortAsc = true;
+function sortLote(col) {
+  loteSortAsc = loteSortCol === col ? !loteSortAsc : true; loteSortCol = col;
+  renderPorLote();
+}
+function renderPorLote() {
+  const data = [...getSupFiltered()].sort((a, b) => {
+    let va = a[loteSortCol] || '', vb = b[loteSortCol] || '';
+    const na = parseFloat(String(va).replace(',','.')), nb = parseFloat(String(vb).replace(',','.'));
+    if (!isNaN(na) && !isNaN(nb)) return loteSortAsc ? na - nb : nb - na;
+    return loteSortAsc ? va.localeCompare(vb, 'es') : vb.localeCompare(va, 'es');
+  });
+  document.getElementById('supCountBadge').innerHTML = `<strong>${data.length}</strong> / ${allData.length} registros`;
+  const tbody = document.getElementById('loteBody');
+  if (!data.length) { tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:40px;color:var(--text3)">Sin resultados</td></tr>'; return; }
+  tbody.innerHTML = data.map(r => {
+    const ha = parseSup(r['Superficie Sembrada']);
+    return `<tr>
+      <td>${r['EMPRESA']||'—'}</td>
+      <td style="font-weight:600">${r['Campo']||'—'}</td>
+      <td style="font-family:'IBM Plex Mono',monospace;font-size:12px">${r['Lote']||'—'}</td>
+      <td>${cultivoTag(r['Cultivo'])}</td>
+      <td>${r['Antecesor']||'—'}</td>
+      <td class="num">${ha ? fmtHa(ha) : '—'}</td>
+    </tr>`;
+  }).join('');
+}
+
+// ── SUELO ─────────────────────────────────────────────────────────────
+let sueloSortCol = 'P', sueloSortAsc = false;
+function sortSuelo(col) {
+  sueloSortAsc = sueloSortCol === col ? !sueloSortAsc : false; sueloSortCol = col;
+  renderSuelo();
+}
+function renderSuelo() {
+  const SUELO_COLS = ['Arena','pH','M.O.','P','Año análisis P'];
+  // Solo filas con al menos P o Año análisis P
+  const data = [...getSupFiltered()].filter(r =>
+    hasVal(getF(r,'P','P Bray')) || hasVal(r['Año análisis P'])
+  ).sort((a, b) => {
+    const colMap2 = { 'Arena':'Arena','pH':'pH','M.O.':'M.O.','P':'P','Año análisis P':'Año análisis P', 'EMPRESA':'EMPRESA','Campo':'Campo','Lote':'Lote','Cultivo':'Cultivo' };
+    let va = a[colMap2[sueloSortCol]] || '', vb = b[colMap2[sueloSortCol]] || '';
+    const na = parseFloat(String(va).replace(',','.')), nb = parseFloat(String(vb).replace(',','.'));
+    if (!isNaN(na) && !isNaN(nb)) return sueloSortAsc ? na - nb : nb - na;
+    return sueloSortAsc ? va.localeCompare(vb, 'es') : vb.localeCompare(va, 'es');
+  });
+  document.getElementById('supCountBadge').innerHTML = `<strong>${data.length}</strong> registros con análisis`;
+  const tbody = document.getElementById('sueloBody');
+  if (!data.length) { tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;padding:40px;color:var(--text3)">Sin datos de análisis para los filtros seleccionados</td></tr>'; return; }
+  tbody.innerHTML = data.map(r => {
+    const v = col => { const val = r[col]; return (val && hasVal(val)) ? val : '—'; };
+    const pVal = parseFloat(String(r['P']||'').replace(',','.'));
+    const pClass = isNaN(pVal) ? '' : pVal < 10 ? 'style="color:#ef4444;font-weight:700"' : pVal < 20 ? 'style="color:#f59e0b;font-weight:600"' : 'style="color:var(--green);font-weight:600"';
+    return `<tr>
+      <td>${r['EMPRESA']||'—'}</td>
+      <td style="font-weight:600">${r['Campo']||'—'}</td>
+      <td style="font-family:'IBM Plex Mono',monospace;font-size:12px">${r['Lote']||'—'}</td>
+      <td>${cultivoTag(r['Cultivo'])}</td>
+      <td class="num">${v('Arena')}</td>
+      <td class="num">${v('pH')}</td>
+      <td class="num">${v('M.O.')}</td>
+      <td class="num" ${pClass}>${v('P')}</td>
+      <td class="num">${v('Año análisis P')}</td>
+    </tr>`;
+  }).join('');
+}
+
+// ── GENÉTICA ──────────────────────────────────────────────────────────
+let genSortCol = 'ha', genSortAsc = false;
+let pieChartGenInstance = null;
+function sortGenetica(col) {
+  genSortAsc = genSortCol === col ? !genSortAsc : false; genSortCol = col;
+  renderGenetica();
+}
+function renderGenetica() {
+  const data = getSupFiltered().filter(r => hasVal(r['Genética']));
+  document.getElementById('supCountBadge').innerHTML = `<strong>${data.length}</strong> registros con genética`;
+
+  // Agrupar por Genética
+  const grupos = {};
+  data.forEach(r => {
+    const gen = r['Genética'].trim();
+    const cultivo = r['Cultivo'] || '';
+    const ha = parseSup(r['Superficie Sembrada']);
+    if (!grupos[gen]) grupos[gen] = { gen, cultivo, ha: 0, lotes: 0 };
+    grupos[gen].ha += ha;
+    grupos[gen].lotes++;
+    // Si hay varios cultivos para la misma genética, mostrar el más frecuente
+    if (!grupos[gen]._cultivoCounts) grupos[gen]._cultivoCounts = {};
+    grupos[gen]._cultivoCounts[cultivo] = (grupos[gen]._cultivoCounts[cultivo] || 0) + 1;
+  });
+  // Resolver cultivo predominante
+  Object.values(grupos).forEach(g => {
+    if (g._cultivoCounts) {
+      g.cultivo = Object.entries(g._cultivoCounts).sort((a,b) => b[1]-a[1])[0]?.[0] || '';
+      delete g._cultivoCounts;
+    }
+  });
+
+  const rows = Object.values(grupos).sort((a, b) => {
+    const va = a[genSortCol] || '', vb = b[genSortCol] || '';
+    const na = typeof va === 'number' ? va : parseFloat(String(va).replace(',','.')),
+          nb = typeof vb === 'number' ? vb : parseFloat(String(vb).replace(',','.'));
+    if (!isNaN(na) && !isNaN(nb)) return genSortAsc ? na - nb : nb - na;
+    return genSortAsc ? String(va).localeCompare(String(vb),'es') : String(vb).localeCompare(String(va),'es');
+  });
+
+  const grandTotal = rows.reduce((s, r) => s + r.ha, 0);
+
+  // Tabla
+  const tbody = document.getElementById('geneticaBody');
+  if (!rows.length) { tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;padding:40px;color:var(--text3)">Sin datos</td></tr>'; return; }
+  tbody.innerHTML = rows.map(r => `<tr>
+    <td style="font-weight:600">${r.gen}</td>
+    <td>${cultivoTag(r.cultivo)}</td>
+    <td class="num">${fmtHa(r.ha)}</td>
+    <td class="num">${r.lotes}</td>
+  </tr>`).join('')
+  + `<tr class="total-row"><td>TOTAL</td><td></td><td class="num grand-total">${fmtHa(grandTotal)}</td><td class="num grand-total">${rows.reduce((s,r)=>s+r.lotes,0)}</td></tr>`;
+
+  // Pie chart genética
+  const top = rows.slice(0, 12); // máximo 12 en el gráfico
+  const palette = ['#16a34a','#3b82f6','#eab308','#f97316','#8b5cf6','#ef4444','#06b6d4','#84cc16','#f59e0b','#ec4899','#14b8a6','#a855f7'];
+  if (pieChartGenInstance) { pieChartGenInstance.destroy(); pieChartGenInstance = null; }
+  const ctx = document.getElementById('pieChartGenetica').getContext('2d');
+  pieChartGenInstance = new Chart(ctx, {
+    type: 'doughnut',
+    data: {
+      labels: top.map(r => r.gen),
+      datasets: [{ data: top.map(r => r.ha), backgroundColor: top.map((_, i) => palette[i % palette.length]), borderWidth: 2, borderColor: '#fff' }]
+    },
+    options: {
+      responsive: true,
+      plugins: {
+        legend: { position: 'bottom', labels: { font: { family: 'IBM Plex Sans', size: 11 }, padding: 8, boxWidth: 12 } },
+        tooltip: { callbacks: { label: ctx => ` ${ctx.label}: ${fmtHa(ctx.raw)} ha (${((ctx.raw/grandTotal)*100).toFixed(1)}%)` } }
+      }
+    }
+  });
+}
+
 
 
 function applyFilters() {
