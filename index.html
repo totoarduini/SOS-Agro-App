@@ -620,16 +620,12 @@ function openDrawer(row, idx) {
   const SECTIONS = [
     { icon:'🏢', title:'Identificación', fields:[
       ['Empresa',          ['EMPRESA','Empresa']],
-      ['Cliente SOS',      ['Cliente SOS','ClienteSOS']],
       ['Campo',            ['Campo']],
       ['Lote',             ['Lote']],
       ['Campaña',          ['Campaña','Campana']],
       ['Grupo CREA',       ['Grupo CREA','GrupoCREA']],
-      ['Coordinador',      ['Coordinador']],
-      ['Responsable',      ['Responsable Registro','ResponsableRegistro','Responsable']],
-      ['ADM',              ['ADM']],
       ['Tenencia',         ['Tenencia']],
-      ['Coordenadas',      ['Coordenadas'], true],
+      ['Coordenadas',      ['Coordenadas'], true, false, true],
     ]},
     { icon:'🗺️', title:'Ambiente y Suelo', fields:[
       ['Ambiente Regional',['Ambiente Regional','AmbienteRegional']],
@@ -703,8 +699,6 @@ function openDrawer(row, idx) {
     ]},
     { icon:'📝', title:'Observaciones', fields:[
       ['Observaciones', ['Observaciones'], true],
-      ['Ambiente',      ['Ambiente'], true],
-      ['Lote-Cult-Ant', ['Lote-Cult-Ant','LoteCultAnt'], true],
     ]},
   ];
 
@@ -713,9 +707,9 @@ function openDrawer(row, idx) {
       renderFert(row, body); return;
     }
     const visible = sec.fields
-      .map(([label, keys, full, highlight]) => {
+      .map(([label, keys, full, highlight, isLink]) => {
         const val = getF(row, ...keys);
-        return val ? { label, val, full, highlight } : null;
+        return val ? { label, val, full, highlight, isLink } : null;
       })
       .filter(Boolean);
 
@@ -723,10 +717,16 @@ function openDrawer(row, idx) {
 
     const secEl = makeSection(sec.icon, sec.title, visible.length);
     const bdy = secEl.querySelector('.dsec-body');
-    visible.forEach(({ label, val, full, highlight }) => {
+    visible.forEach(({ label, val, full, highlight, isLink }) => {
       const f = document.createElement('div');
       f.className = 'dfield' + (full ? ' full' : '');
-      f.innerHTML = `<span class="dfield-label">${label}</span><span class="dfield-val ${highlight?'highlight':''}">${val}</span>`;
+      let html = val;
+      if (isLink) {
+        // Convertir coordenadas con coma decimal a punto para Google Maps
+        const normalized = val.replace(/,(\d)/g, '.$1');
+        html = `<a href="https://www.google.com/maps?q=${encodeURIComponent(normalized)}" target="_blank" style="color:var(--green);text-decoration:none;font-size:13px">📍 Ver en Google Maps</a>`;
+      }
+      f.innerHTML = `<span class="dfield-label">${label}</span><span class="dfield-val ${highlight?'highlight':''}">${html}</span>`;
       bdy.appendChild(f);
     });
     body.appendChild(secEl);
