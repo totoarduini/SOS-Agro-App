@@ -121,38 +121,11 @@ header {
 /* ── MAIN ── */
 .main { padding: 20px; max-width: 1400px; margin: 0 auto; }
 
-.table-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; box-shadow: var(--shadow); }
-
-/* Header fijo — tabla separada pegada arriba */
-.table-header-wrap {
-  position: sticky;
-  top: var(--top-offset);
-  z-index: 20;
-  background: var(--surface2);
-  border-bottom: 2px solid var(--border);
-  overflow: hidden;
-}
-.header-table { width: 100%; border-collapse: collapse; font-size: 13px; min-width: 900px; table-layout: fixed; }
-.header-table th {
-  padding: 10px 14px;
-  text-align: left;
-  font-family: 'IBM Plex Mono', monospace;
-  font-size: 10px; font-weight: 600;
-  color: var(--text3);
-  text-transform: uppercase;
-  letter-spacing: .6px;
-  white-space: nowrap;
-  cursor: pointer;
-  user-select: none;
-  background: var(--surface2);
-}
-.header-table th:hover { color: var(--text2); }
-.header-table th.sorted { color: var(--green); }
-
-/* Body con scroll horizontal */
-.table-wrap { overflow-x: auto; }
-.body-table { width: 100%; border-collapse: collapse; font-size: 13px; min-width: 900px; table-layout: fixed; }
-th { padding: 10px 14px; text-align: left; font-family: 'IBM Plex Mono', monospace; font-size: 10px; font-weight: 600; color: var(--text3); text-transform: uppercase; letter-spacing: .6px; white-space: nowrap; border-bottom: 1px solid var(--border); cursor: pointer; user-select: none; }
+.table-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; box-shadow: var(--shadow); }
+.table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+thead th { background: var(--surface2); position: sticky; top: var(--top-offset); z-index: 10; }
+th { padding: 10px 14px; text-align: left; font-family: 'IBM Plex Mono', monospace; font-size: 10px; font-weight: 600; color: var(--text3); text-transform: uppercase; letter-spacing: .6px; white-space: nowrap; border-bottom: 2px solid var(--border); cursor: pointer; user-select: none; }
 th:hover { color: var(--text2); }
 th.sorted { color: var(--green); }
 tbody tr { border-bottom: 1px solid var(--border); cursor: pointer; transition: background .1s; }
@@ -216,25 +189,13 @@ td.mono { font-family: 'IBM Plex Mono', monospace; font-size: 12px; }
 .dsec-count { font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: var(--text3); background: var(--surface2); border: 1px solid var(--border); border-radius: 10px; padding: 1px 7px; }
 .dsec-arrow { color: var(--text3); font-size: 11px; transition: transform .2s; margin-left: 4px; }
 .dsec-header.collapsed .dsec-arrow { transform: rotate(-90deg); }
-.dsec-body { padding: 14px 16px; display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 14px 20px; }
+.dsec-body { padding: 14px 16px; display: grid; grid-template-columns: repeat(auto-fill, minmax(160px,1fr)); gap: 14px 20px; }
 .dsec-body.collapsed { display: none; }
 .dfield { display: flex; flex-direction: column; gap: 3px; }
 .dfield.full { grid-column: 1 / -1; }
 .dfield-label { font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: var(--text3); text-transform: uppercase; letter-spacing: .5px; }
 .dfield-val { font-size: 13px; color: var(--text); word-break: break-word; line-height: 1.4; }
 .dfield-val.highlight { font-family: 'IBM Plex Mono', monospace; color: var(--green); font-size: 16px; font-weight: 700; }
-
-.header-table th:nth-child(1), .body-table td:nth-child(1) { width: 90px; }
-.header-table th:nth-child(2), .body-table td:nth-child(2) { width: 120px; }
-.header-table th:nth-child(3), .body-table td:nth-child(3) { width: 120px; }
-.header-table th:nth-child(4), .body-table td:nth-child(4) { width: 80px; }
-.header-table th:nth-child(5), .body-table td:nth-child(5) { width: 90px; }
-.header-table th:nth-child(6), .body-table td:nth-child(6) { width: 90px; }
-.header-table th:nth-child(7), .body-table td:nth-child(7) { width: 160px; }
-.header-table th:nth-child(8), .body-table td:nth-child(8) { width: 80px; }
-.header-table th:nth-child(9), .body-table td:nth-child(9) { width: 130px; }
-.header-table th:nth-child(10), .body-table td:nth-child(10) { width: 100px; }
-.header-table th:nth-child(11), .body-table td:nth-child(11) { width: 100px; }
 
 /* Fert table */
 .fert-wrap { grid-column: 1 / -1; overflow-x: auto; }
@@ -297,27 +258,23 @@ td.mono { font-family: 'IBM Plex Mono', monospace; font-size: 12px; }
   <div class="error-msg" id="errorState" style="display:none"></div>
 
   <div class="table-card" id="tableCard" style="display:none">
-    <div class="table-header-wrap" id="tableHeaderWrap">
-      <table class="header-table">
+    <div class="table-wrap">
+      <table>
         <thead>
           <tr>
-            <th onclick="sortBy('EMPRESA')" id="th0">Empresa</th>
-            <th onclick="sortBy('Campo')" id="th1">Campo</th>
-            <th onclick="sortBy('Lote')" id="th2">Lote</th>
-            <th onclick="sortBy('Campaña')" id="th3">Campaña</th>
-            <th onclick="sortBy('Cultivo')" id="th4">Cultivo</th>
-            <th onclick="sortBy('Destino')" id="th5">Destino</th>
-            <th onclick="sortBy('Ambiente Regional')" id="th6">Ambiente</th>
-            <th onclick="sortBy('Superficie Sembrada')" id="th7">Sup. (ha)</th>
-            <th onclick="sortBy('Antecesor')" id="th8">Antecesor</th>
-            <th onclick="sortBy('Fecha de Siembra')" id="th9">F. Siembra</th>
-            <th onclick="sortBy('Rendimiento (kg/ha sembrada)')" id="th10">Rinde kg/ha</th>
+            <th onclick="sortBy('EMPRESA')">Empresa</th>
+            <th onclick="sortBy('Campo')">Campo</th>
+            <th onclick="sortBy('Lote')">Lote</th>
+            <th onclick="sortBy('Campaña')">Campaña</th>
+            <th onclick="sortBy('Cultivo')">Cultivo</th>
+            <th onclick="sortBy('Destino')">Destino</th>
+            <th onclick="sortBy('Ambiente Regional')">Ambiente</th>
+            <th onclick="sortBy('Superficie Sembrada')">Sup. (ha)</th>
+            <th onclick="sortBy('Antecesor')">Antecesor</th>
+            <th onclick="sortBy('Fecha de Siembra')">F. Siembra</th>
+            <th onclick="sortBy('Rendimiento (kg/ha sembrada)')">Rinde kg/ha</th>
           </tr>
         </thead>
-      </table>
-    </div>
-    <div class="table-wrap">
-      <table class="body-table">
         <tbody id="tableBody"></tbody>
       </table>
     </div>
@@ -388,15 +345,6 @@ function updateTheadOffset() {
   document.documentElement.style.setProperty('--top-offset', h + 'px');
 }
 
-// Sync horizontal scroll entre header y body
-function syncTableScroll() {
-  const wrap = document.querySelector('.table-wrap');
-  const hdrWrap = document.getElementById('tableHeaderWrap');
-  if (wrap && hdrWrap) {
-    wrap.addEventListener('scroll', () => { hdrWrap.scrollLeft = wrap.scrollLeft; });
-  }
-}
-
 function loadData() {
   Papa.parse(CSV_URL, {
     download: true, header: true, skipEmptyLines: true,
@@ -412,7 +360,6 @@ function loadData() {
       document.getElementById('cardsView').style.display = 'block';
       setStatus('ok', allData.length + ' registros');
       updateTheadOffset();
-      syncTableScroll();
     },
     error(err) { showError('Error al cargar:\n' + err.message); }
   });
@@ -566,9 +513,9 @@ function applyFilters() {
   const search = document.getElementById('search').value.toLowerCase();
   filtered = allData.filter(r => {
     // Ocultar filas sin datos clave
-    if (!hasVal(r['Campo']) && !hasVal(r['Lote']) && !hasVal(r['Cultivo'])) return false;
-    if (!hasVal(r['Campo']) || !hasVal(r['Cultivo'])) return false;
-
+    const campo = r['Campo'] ? String(r['Campo']).trim() : '';
+    const cultivo = r['Cultivo'] ? String(r['Cultivo']).trim() : '';
+    if (!campo || !cultivo) return false;
     for (const fd of FILTER_DEF) {
       if (SEL[fd.id].size > 0 && !SEL[fd.id].has(r[fd.col])) return false;
     }
@@ -863,9 +810,7 @@ function closeDrawer() {
 function hasVal(v) {
   if (v === undefined || v === null) return false;
   const s = String(v).trim();
-  if (s === '') return false;
-  if (s === '-' || s === '—') return false;
-  // Filter numeric zeros: 0, 0.0, 0,0, 0.00, 0,00
+  if (!s || s === '-' || s === '—') return false;
   if (/^0+([,.]0+)?$/.test(s)) return false;
   return true;
 }
