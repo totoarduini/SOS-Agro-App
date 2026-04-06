@@ -121,10 +121,37 @@ header {
 /* ── MAIN ── */
 .main { padding: 20px; max-width: 1400px; margin: 0 auto; }
 
-.table-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; overflow: visible; box-shadow: var(--shadow); }
+.table-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; box-shadow: var(--shadow); }
+
+/* Header fijo — tabla separada pegada arriba */
+.table-header-wrap {
+  position: sticky;
+  top: var(--top-offset);
+  z-index: 20;
+  background: var(--surface2);
+  border-bottom: 2px solid var(--border);
+  overflow: hidden;
+}
+.header-table { width: 100%; border-collapse: collapse; font-size: 13px; min-width: 900px; table-layout: fixed; }
+.header-table th {
+  padding: 10px 14px;
+  text-align: left;
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 10px; font-weight: 600;
+  color: var(--text3);
+  text-transform: uppercase;
+  letter-spacing: .6px;
+  white-space: nowrap;
+  cursor: pointer;
+  user-select: none;
+  background: var(--surface2);
+}
+.header-table th:hover { color: var(--text2); }
+.header-table th.sorted { color: var(--green); }
+
+/* Body con scroll horizontal */
 .table-wrap { overflow-x: auto; }
-table { width: 100%; border-collapse: collapse; font-size: 13px; }
-thead { background: var(--surface2); position: sticky; top: var(--top-offset); z-index: 10; box-shadow: 0 1px 0 var(--border); }
+.body-table { width: 100%; border-collapse: collapse; font-size: 13px; min-width: 900px; table-layout: fixed; }
 th { padding: 10px 14px; text-align: left; font-family: 'IBM Plex Mono', monospace; font-size: 10px; font-weight: 600; color: var(--text3); text-transform: uppercase; letter-spacing: .6px; white-space: nowrap; border-bottom: 1px solid var(--border); cursor: pointer; user-select: none; }
 th:hover { color: var(--text2); }
 th.sorted { color: var(--green); }
@@ -180,7 +207,7 @@ td.mono { font-family: 'IBM Plex Mono', monospace; font-size: 12px; }
 .drawer-body { overflow-y: auto; flex: 1; padding: 16px 20px 24px; display: flex; flex-direction: column; gap: 10px; background: var(--bg); }
 
 /* Drawer sections */
-.dsec { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; box-shadow: var(--shadow); }
+.dsec { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; overflow: visible; box-shadow: var(--shadow); }
 .dsec-header { padding: 11px 16px; display: flex; align-items: center; gap: 8px; cursor: pointer; user-select: none; background: var(--surface); border-bottom: 1px solid var(--border); transition: background .1s; }
 .dsec-header:hover { background: var(--surface2); }
 .dsec-header.collapsed { border-bottom: none; }
@@ -196,6 +223,18 @@ td.mono { font-family: 'IBM Plex Mono', monospace; font-size: 12px; }
 .dfield-label { font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: var(--text3); text-transform: uppercase; letter-spacing: .5px; }
 .dfield-val { font-size: 13px; color: var(--text); word-break: break-word; line-height: 1.4; }
 .dfield-val.highlight { font-family: 'IBM Plex Mono', monospace; color: var(--green); font-size: 16px; font-weight: 700; }
+
+.header-table th:nth-child(1), .body-table td:nth-child(1) { width: 90px; }
+.header-table th:nth-child(2), .body-table td:nth-child(2) { width: 120px; }
+.header-table th:nth-child(3), .body-table td:nth-child(3) { width: 120px; }
+.header-table th:nth-child(4), .body-table td:nth-child(4) { width: 80px; }
+.header-table th:nth-child(5), .body-table td:nth-child(5) { width: 90px; }
+.header-table th:nth-child(6), .body-table td:nth-child(6) { width: 90px; }
+.header-table th:nth-child(7), .body-table td:nth-child(7) { width: 160px; }
+.header-table th:nth-child(8), .body-table td:nth-child(8) { width: 80px; }
+.header-table th:nth-child(9), .body-table td:nth-child(9) { width: 130px; }
+.header-table th:nth-child(10), .body-table td:nth-child(10) { width: 100px; }
+.header-table th:nth-child(11), .body-table td:nth-child(11) { width: 100px; }
 
 /* Fert table */
 .fert-wrap { grid-column: 1 / -1; overflow-x: auto; }
@@ -258,23 +297,27 @@ td.mono { font-family: 'IBM Plex Mono', monospace; font-size: 12px; }
   <div class="error-msg" id="errorState" style="display:none"></div>
 
   <div class="table-card" id="tableCard" style="display:none">
-    <div class="table-wrap">
-      <table>
+    <div class="table-header-wrap" id="tableHeaderWrap">
+      <table class="header-table">
         <thead>
           <tr>
-            <th onclick="sortBy('EMPRESA')">Empresa</th>
-            <th onclick="sortBy('Campo')">Campo</th>
-            <th onclick="sortBy('Lote')">Lote</th>
-            <th onclick="sortBy('Campaña')">Campaña</th>
-            <th onclick="sortBy('Cultivo')">Cultivo</th>
-            <th onclick="sortBy('Destino')">Destino</th>
-            <th onclick="sortBy('Ambiente Regional')">Ambiente</th>
-            <th onclick="sortBy('Superficie Sembrada')">Sup. (ha)</th>
-            <th onclick="sortBy('Antecesor')">Antecesor</th>
-            <th onclick="sortBy('Fecha de Siembra')">F. Siembra</th>
-            <th onclick="sortBy('Rendimiento (kg/ha sembrada)')">Rinde kg/ha</th>
+            <th onclick="sortBy('EMPRESA')" id="th0">Empresa</th>
+            <th onclick="sortBy('Campo')" id="th1">Campo</th>
+            <th onclick="sortBy('Lote')" id="th2">Lote</th>
+            <th onclick="sortBy('Campaña')" id="th3">Campaña</th>
+            <th onclick="sortBy('Cultivo')" id="th4">Cultivo</th>
+            <th onclick="sortBy('Destino')" id="th5">Destino</th>
+            <th onclick="sortBy('Ambiente Regional')" id="th6">Ambiente</th>
+            <th onclick="sortBy('Superficie Sembrada')" id="th7">Sup. (ha)</th>
+            <th onclick="sortBy('Antecesor')" id="th8">Antecesor</th>
+            <th onclick="sortBy('Fecha de Siembra')" id="th9">F. Siembra</th>
+            <th onclick="sortBy('Rendimiento (kg/ha sembrada)')" id="th10">Rinde kg/ha</th>
           </tr>
         </thead>
+      </table>
+    </div>
+    <div class="table-wrap">
+      <table class="body-table">
         <tbody id="tableBody"></tbody>
       </table>
     </div>
@@ -345,6 +388,15 @@ function updateTheadOffset() {
   document.documentElement.style.setProperty('--top-offset', h + 'px');
 }
 
+// Sync horizontal scroll entre header y body
+function syncTableScroll() {
+  const wrap = document.querySelector('.table-wrap');
+  const hdrWrap = document.getElementById('tableHeaderWrap');
+  if (wrap && hdrWrap) {
+    wrap.addEventListener('scroll', () => { hdrWrap.scrollLeft = wrap.scrollLeft; });
+  }
+}
+
 function loadData() {
   Papa.parse(CSV_URL, {
     download: true, header: true, skipEmptyLines: true,
@@ -360,6 +412,7 @@ function loadData() {
       document.getElementById('cardsView').style.display = 'block';
       setStatus('ok', allData.length + ' registros');
       updateTheadOffset();
+      syncTableScroll();
     },
     error(err) { showError('Error al cargar:\n' + err.message); }
   });
@@ -807,7 +860,15 @@ function closeDrawer() {
 }
 
 // ── HELPERS ───────────────────────────────────────────────────────────
-function hasVal(v) { return v !== undefined && v !== null && String(v).trim() !== ''; }
+function hasVal(v) {
+  if (v === undefined || v === null) return false;
+  const s = String(v).trim();
+  if (s === '') return false;
+  if (s === '-' || s === '—') return false;
+  // Filter numeric zeros: 0, 0.0, 0,0, 0.00, 0,00
+  if (/^0+([,.]0+)?$/.test(s)) return false;
+  return true;
+}
 
 function cultivoTag(c) {
   if (!c) return '';
