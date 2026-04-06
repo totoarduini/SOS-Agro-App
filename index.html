@@ -271,7 +271,9 @@ td.mono { font-family: 'IBM Plex Mono', monospace; font-size: 12px; }
       <button class="tab-btn" id="tabBtnPorLote"     onclick="switchTab('porlote')">🗂️ Por Lote</button>
       <button class="tab-btn" id="tabBtnSuelo"       onclick="switchTab('suelo')">🧪 Suelo</button>
       <button class="tab-btn" id="tabBtnGenetica"    onclick="switchTab('genetica')">🌱 Genética</button>
-      <button class="tab-btn" id="tabBtnPlanSiembra" onclick="switchTab('plansiembra')">📋 Plan de Siembra</button>
+      <button class="tab-btn" id="tabBtnPlanSiembra"  onclick="switchTab('plansiembra')">📋 Plan de Siembra</button>
+      <button class="tab-btn" id="tabBtnFertilizante" onclick="switchTab('fertilizante')">💊 Fertilizante Total</button>
+      <button class="tab-btn" id="tabBtnRecN"         onclick="switchTab('recn')">🌿 Rec. Fert. N</button>
     </div>
     <div class="header-right">
       <div class="status-pill">
@@ -447,6 +449,85 @@ td.mono { font-family: 'IBM Plex Mono', monospace; font-size: 12px; }
       </div>
     </div>
   </div>
+  <!-- FERTILIZANTE TOTAL -->
+  <div id="tabFertilizante" style="display:none">
+    <div class="sup-layout" style="grid-template-columns:1fr 340px">
+
+      <!-- Tabla detalle -->
+      <div class="sup-card">
+        <div class="sup-card-title"><span>💊</span> Detalle por Lote</div>
+        <div class="pivot-wrap">
+          <table class="pivot-tbl" id="fertTable">
+            <thead><tr>
+              <th onclick="sortFert('Campo')">Campo</th>
+              <th onclick="sortFert('Lote')">Lote</th>
+              <th onclick="sortFert('Ambiente Regional')">Ambiente</th>
+              <th onclick="sortFert('Cultivo')">Cultivo</th>
+              <th onclick="sortFert('Fertilizante P Producto 1')">Fertilizante Fosforado</th>
+              <th onclick="sortFert('Superficie Sembrada')" class="num">Sup. (ha)</th>
+              <th onclick="sortFert('P')" class="num">P Bray (ppm)</th>
+              <th onclick="sortFert('Año análisis P')" class="num">Año anál. P</th>
+              <th onclick="sortFert('Dosis Fert. P Producto 1')" class="num">Dosis Fert. P (kg/ha)</th>
+              <th onclick="sortFert('KG FERT P NECESARIOS')" class="num">kg Fert. P total</th>
+            </tr></thead>
+            <tbody id="fertBody"></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- Panel resumen -->
+      <div style="display:flex;flex-direction:column;gap:16px">
+        <div class="sup-card">
+          <div class="sup-card-title"><span>📦</span> Resumen por Fertilizante</div>
+          <div class="pivot-wrap">
+            <table class="pivot-tbl" id="fertResumenTable">
+              <thead><tr>
+                <th>Fertilizante</th>
+                <th class="num">kg Totales</th>
+              </tr></thead>
+              <tbody id="fertResumenBody"></tbody>
+            </table>
+          </div>
+        </div>
+        <div class="sup-card" id="fertStatsCard">
+          <div class="sup-card-title"><span>📊</span> Totales</div>
+          <div id="fertStatsBody"></div>
+        </div>
+      </div>
+
+    </div>
+  </div>
+
+  <!-- REC. FERTILIZACIÓN N -->
+  <div id="tabRecN" style="display:none">
+    <div class="sup-card">
+      <div class="sup-card-title"><span>🌿</span> Recomendación Fertilización N</div>
+      <div class="pivot-wrap">
+        <table class="pivot-tbl" id="recnTable">
+          <thead>
+            <tr>
+              <th onclick="sortRecN('Campo')">Campo</th>
+              <th onclick="sortRecN('Lote')">Lote</th>
+              <th onclick="sortRecN('Ambiente Regional')">Ambiente</th>
+              <th onclick="sortRecN('Antecesor')">Antecesor</th>
+              <th onclick="sortRecN('Fertilizante P Producto 1')">Fertilizante P</th>
+              <th onclick="sortRecN('Fertilizante N Producto 2')">Fert. N</th>
+              <th>Info Análisis N</th>
+              <th onclick="sortRecN('Superficie Sembrada')" class="num">Sup. (ha)</th>
+              <th onclick="sortRecN('Nitrogeno suelo (0-60 cm)')" class="num">N suelo 0–60 cm</th>
+              <th onclick="sortRecN('Nitrogeno Objetivo')" class="num">N Objetivo</th>
+              <th onclick="sortRecN('_dosisCalc')" class="num">Dosis Calc.</th>
+              <th onclick="sortRecN('_dosisRecom')" class="num">Dosis Recom.</th>
+              <th onclick="sortRecN('N alcanzado real')" class="num">N Alc. Real</th>
+              <th onclick="sortRecN('KG FERT 2 NECESARIOS')" class="num">kg Fert. N total</th>
+            </tr>
+          </thead>
+          <tbody id="recnBody"></tbody>
+        </table>
+      </div>
+    </div>
+  </div>
+
 </div>
 
 <div class="overlay" id="overlay" onclick="closeDrawer()"></div>
@@ -676,12 +757,12 @@ function refreshAllDropdowns() {
 
 // ── TAB SWITCHING ─────────────────────────────────────────────────────
 let activeTab = 'registros';
-const SUMMARY_TABS = ['superficies', 'porlote', 'suelo', 'genetica', 'plansiembra'];
+const SUMMARY_TABS = ['superficies', 'porlote', 'suelo', 'genetica', 'plansiembra', 'fertilizante', 'recn'];
 
 function switchTab(tab) {
   activeTab = tab;
   // Botones
-  const btnMap = { registros:'tabBtnRegistros', superficies:'tabBtnSuperficies', porlote:'tabBtnPorLote', suelo:'tabBtnSuelo', genetica:'tabBtnGenetica', plansiembra:'tabBtnPlanSiembra' };
+  const btnMap = { registros:'tabBtnRegistros', superficies:'tabBtnSuperficies', porlote:'tabBtnPorLote', suelo:'tabBtnSuelo', genetica:'tabBtnGenetica', plansiembra:'tabBtnPlanSiembra', fertilizante:'tabBtnFertilizante', recn:'tabBtnRecN' };
   Object.entries(btnMap).forEach(([t, id]) => {
     document.getElementById(id)?.classList.toggle('active', t === tab);
   });
@@ -691,7 +772,9 @@ function switchTab(tab) {
   document.getElementById('tabPorLote').style.display     = tab === 'porlote'     ? '' : 'none';
   document.getElementById('tabSuelo').style.display       = tab === 'suelo'       ? '' : 'none';
   document.getElementById('tabGenetica').style.display    = tab === 'genetica'    ? '' : 'none';
-  document.getElementById('tabPlanSiembra').style.display = tab === 'plansiembra' ? '' : 'none';
+  document.getElementById('tabPlanSiembra').style.display   = tab === 'plansiembra'  ? '' : 'none';
+  document.getElementById('tabFertilizante').style.display  = tab === 'fertilizante' ? '' : 'none';
+  document.getElementById('tabRecN').style.display          = tab === 'recn'         ? '' : 'none';
   // Filtros
   document.getElementById('filtersRegistros').style.display = tab === 'registros' ? '' : 'none';
   document.getElementById('filtersResumenes').style.display  = SUMMARY_TABS.includes(tab) ? '' : 'none';
@@ -700,7 +783,9 @@ function switchTab(tab) {
   if (tab === 'porlote')     renderPorLote();
   if (tab === 'suelo')       renderSuelo();
   if (tab === 'genetica')    renderGenetica();
-  if (tab === 'plansiembra') renderPlanSiembra();
+  if (tab === 'plansiembra')  renderPlanSiembra();
+  if (tab === 'fertilizante') renderFertilizante();
+  if (tab === 'recn')         renderRecN();
 }
 
 // ── SUPERFICIES FILTERS ───────────────────────────────────────────────
@@ -791,6 +876,8 @@ function onSupFilterChange(changedId) {
   if (activeTab === 'suelo')       renderSuelo();
   if (activeTab === 'genetica')    renderGenetica();
   if (activeTab === 'plansiembra') renderPlanSiembra();
+  if (activeTab === 'fertilizante') renderFertilizante();
+  if (activeTab === 'recn')         renderRecN();
 }
 
 // ── SUPERFICIES: RENDER ───────────────────────────────────────────────
@@ -1114,13 +1201,23 @@ function renderPlanSiembra() {
     return;
   }
 
-  // Determinar qué columna de semilla mostrar
+  // Determinar qué columna de semilla mostrar en el header
   const modo = getPlanSemillaMode(data);
   const usaBolsas = modo === 'bolsas';
+  const tieneBolsasEnData = data.some(r => cultivoUsaBolsas(r['Cultivo']));
+  const tieneKgEnData     = data.some(r => !cultivoUsaBolsas(r['Cultivo']));
   const headerSemilla = document.getElementById('planSemillaHeader');
   if (headerSemilla) {
-    headerSemilla.textContent = usaBolsas ? 'Bolsas necesarias' : 'kg Semilla total';
-    headerSemilla.onclick = () => sortPlan(usaBolsas ? 'NRO BOLSAS NECESARIAS Mz/Gi' : 'kg Semilla total');
+    if (tieneBolsasEnData && tieneKgEnData) {
+      headerSemilla.textContent = 'Semilla (bolsas / kg)';
+      headerSemilla.onclick = () => sortPlan('NRO BOLSAS NECESARIAS Mz/Gi');
+    } else if (tieneBolsasEnData) {
+      headerSemilla.textContent = 'Bolsas necesarias';
+      headerSemilla.onclick = () => sortPlan('NRO BOLSAS NECESARIAS Mz/Gi');
+    } else {
+      headerSemilla.textContent = 'kg Semilla total';
+      headerSemilla.onclick = () => sortPlan('kg Semilla total');
+    }
   }
 
   let totSup = 0, totFertP = 0, totSemilla = 0;
@@ -1130,25 +1227,22 @@ function renderPlanSiembra() {
     const vs = key => (r[key] && hasVal(r[key])) ? r[key] : '—';
 
     const sup   = vn('Superficie Sembrada');
-    const fertP = vn('KG FERT P NECESARIOS');
+    // Usar getF para matching case-insensitive de la columna de fertilizante
+    const fertPRaw = getF(r, 'KG FERT P NECESARIOS');
+    const fertP = fertPRaw ? (parseFloat(String(fertPRaw).replace(',','.')) || null) : null;
 
-    // Elegir columna de semilla según el cultivo de la fila
+    // Elegir columna de semilla según el cultivo de la fila (siempre por fila, independiente del modo global)
     const esBolsas = cultivoUsaBolsas(r['Cultivo']);
-    let semVal = null;
-    if (usaBolsas) {
-      // Modo bolsas: mostrar bolsas para los que corresponde, kg para los demás
-      semVal = esBolsas ? vn('NRO BOLSAS NECESARIAS Mz/Gi') : vn('kg Semilla total');
-    } else {
-      // Modo kg: mostrar kg para todos
-      semVal = vn('kg Semilla total');
-    }
+    const semVal = esBolsas
+      ? vn('NRO BOLSAS NECESARIAS Mz/Gi')
+      : vn('kg Semilla total');
 
     if (sup)    totSup    += sup;
     if (fertP)  totFertP  += fertP;
     if (semVal) totSemilla += semVal;
 
     const semDisplay = semVal
-      ? (usaBolsas && esBolsas ? Math.round(semVal).toLocaleString('es-AR') : fmtHa(semVal))
+      ? (esBolsas ? Math.round(semVal).toLocaleString('es-AR') : fmtHa(semVal))
       : '—';
 
     return `<tr>
@@ -1182,6 +1276,256 @@ function renderPlanSiembra() {
   tbody.innerHTML = rows.join('');
 }
 
+// ── FERTILIZANTE TOTAL ────────────────────────────────────────────────
+let fertSortCol = 'Campo', fertSortAsc = true;
+
+// Columnas de productos fertilizantes: nombre en CSV → kg en CSV
+const FERT_PROD_COLS = [
+  { nom: 'Fertilizante P Producto 1', kg: 'KG FERT P NECESARIOS'  },
+  { nom: 'Fertilizante N Producto 2', kg: 'KG FERT 2 NECESARIOS'  },
+  { nom: 'Producto 3',                kg: 'KG FERT 3 NECESARIOS'  },
+  { nom: 'Producto 4',                kg: 'KG FERT 4 NECESARIOS'  },
+];
+
+function sortFert(col) {
+  fertSortAsc = fertSortCol === col ? !fertSortAsc : true;
+  fertSortCol = col;
+  renderFertilizante();
+}
+
+function renderFertilizante() {
+  const data = [...getSupFiltered()].sort((a, b) => {
+    const va = a[fertSortCol] || '', vb = b[fertSortCol] || '';
+    const na = parseFloat(String(va).replace(',','.')), nb = parseFloat(String(vb).replace(',','.'));
+    if (!isNaN(na) && !isNaN(nb)) return fertSortAsc ? na - nb : nb - na;
+    return fertSortAsc ? String(va).localeCompare(String(vb),'es') : String(vb).localeCompare(String(va),'es');
+  });
+
+  document.getElementById('supCountBadge').innerHTML = `<strong>${data.length}</strong> / ${allData.length} registros`;
+
+  // ── Tabla detalle ──────────────────────────────────────────────────
+  const tbody = document.getElementById('fertBody');
+  if (!data.length) {
+    tbody.innerHTML = '<tr><td colspan="10" style="text-align:center;padding:40px;color:var(--text3)">Sin resultados</td></tr>';
+  } else {
+    let totSup = 0, totFertP = 0;
+    tbody.innerHTML = data.map(r => {
+      const sup   = parseSup(r['Superficie Sembrada']);
+      const fertPRaw = getF(r, 'KG FERT P NECESARIOS');
+      const fertP = fertPRaw ? (parseFloat(String(fertPRaw).replace(',','.')) || 0) : 0;
+      const pVal  = r['P'] && hasVal(r['P']) ? r['P'] : '—';
+      const pNum  = parseFloat(String(r['P']||'').replace(',','.'));
+      const pClass = isNaN(pNum) ? '' : pNum < 10 ? 'style="color:#ef4444;font-weight:700"' : pNum < 20 ? 'style="color:#f59e0b;font-weight:600"' : 'style="color:var(--green);font-weight:600"';
+
+      totSup   += sup;
+      totFertP += fertP;
+
+      return `<tr>
+        <td style="font-weight:600">${r['Campo']||'—'}</td>
+        <td style="font-family:'IBM Plex Mono',monospace;font-size:12px">${r['Lote']||'—'}</td>
+        <td style="max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${r['Ambiente Regional']||'—'}</td>
+        <td>${cultivoTag(r['Cultivo'])}</td>
+        <td style="font-weight:500">${r['Fertilizante P Producto 1']||'—'}</td>
+        <td class="num">${sup ? fmtHa(sup) : '—'}</td>
+        <td class="num" ${pClass}>${pVal}</td>
+        <td class="num">${r['Año análisis P']||'—'}</td>
+        <td class="num">${r['Dosis Fert. P Producto 1']||'—'}</td>
+        <td class="num" style="font-weight:600">${fertP ? fmtHa(fertP) : '—'}</td>
+      </tr>`;
+    }).join('') + `<tr class="total-row">
+      <td colspan="5" style="font-weight:700">TOTAL</td>
+      <td class="num grand-total">${fmtHa(totSup)}</td>
+      <td></td><td></td><td></td>
+      <td class="num grand-total">${fmtHa(totFertP)}</td>
+    </tr>`;
+  }
+
+  // ── Tabla resumen por fertilizante ────────────────────────────────
+  // Agrupar kg por nombre de producto (todos los slots)
+  const resumen = {};
+  data.forEach(r => {
+    FERT_PROD_COLS.forEach(({ nom, kg }) => {
+      const nombre = getF(r, nom);
+      if (!nombre) return;
+      const kgRaw = getF(r, kg);
+      const kgVal = kgRaw ? parseFloat(String(kgRaw).replace(',','.')) : NaN;
+      if (isNaN(kgVal) || kgVal <= 0) return;
+      if (!resumen[nombre]) resumen[nombre] = 0;
+      resumen[nombre] += kgVal;
+    });
+  });
+
+  const resRows = Object.entries(resumen).sort((a, b) => b[1] - a[1]);
+  const totalKgAll = resRows.reduce((s, [, v]) => s + v, 0);
+
+  const resBody = document.getElementById('fertResumenBody');
+  if (!resRows.length) {
+    resBody.innerHTML = '<tr><td colspan="2" style="text-align:center;padding:20px;color:var(--text3)">Sin datos</td></tr>';
+  } else {
+    resBody.innerHTML = resRows.map(([nombre, kgTot]) => `<tr>
+      <td style="font-weight:500">${nombre}</td>
+      <td class="num" style="font-weight:600">${fmtHa(kgTot)}</td>
+    </tr>`).join('')
+    + `<tr class="total-row">
+        <td style="font-weight:700">TOTAL</td>
+        <td class="num grand-total">${fmtHa(totalKgAll)}</td>
+      </tr>`;
+  }
+
+  // ── Stats ──────────────────────────────────────────────────────────
+  const statsBody = document.getElementById('fertStatsBody');
+  const lotesCon = data.filter(r => { const v = getF(r,'KG FERT P NECESARIOS'); return v && parseFloat(String(v).replace(',','.')) > 0; }).length;
+  statsBody.innerHTML = [
+    ['Lotes con fert. P', lotesCon],
+    ['Lotes totales', data.length],
+    ['Productos distintos', resRows.length],
+  ].map(([label, val]) => `<div class="sup-stat">
+    <span class="sup-stat-label">${label}</span>
+    <span class="sup-stat-val" style="font-size:18px">${val}</span>
+  </div>`).join('');
+}
+
+// ── RECOMENDACIÓN FERTILIZACIÓN N ────────────────────────────────────
+let recnSortCol = 'Campo', recnSortAsc = true;
+
+function sortRecN(col) {
+  recnSortAsc = recnSortCol === col ? !recnSortAsc : true;
+  recnSortCol = col;
+  renderRecN();
+}
+
+// Parsea un valor numérico del CSV (coma o punto decimal)
+function pn(v) {
+  if (v === null || v === undefined) return null;
+  const n = parseFloat(String(v).replace(',', '.'));
+  return isNaN(n) ? null : n;
+}
+
+// Promedio ponderado: suma(val * peso) / suma(peso), solo para pares donde ambos son válidos
+function wAvg(pairs) {
+  let sumProd = 0, sumPeso = 0;
+  pairs.forEach(([val, peso]) => {
+    if (val !== null && peso !== null && peso > 0) {
+      sumProd += val * peso;
+      sumPeso += peso;
+    }
+  });
+  return sumPeso > 0 ? sumProd / sumPeso : null;
+}
+
+function renderRecN() {
+  // Enriquecer filas con valores numéricos pre-calculados para permitir sort
+  const enrich = r => {
+    const dosisCalc  = pn(getF(r, 'Dosis calculada', 'DosisCalculada'));
+    const dosisRecom = pn(getF(r, 'Dosis 2', 'Dosis de fertilizante recom_ (kilos/ha)', 'DosisRecomendada'));
+    return { ...r, _dosisCalc: dosisCalc, _dosisRecom: dosisRecom };
+  };
+
+  const rawData = getSupFiltered().map(enrich);
+
+  const data = [...rawData].sort((a, b) => {
+    let va = a[recnSortCol], vb = b[recnSortCol];
+    if (va === null || va === undefined) va = '';
+    if (vb === null || vb === undefined) vb = '';
+    const na = typeof va === 'number' ? va : parseFloat(String(va).replace(',', '.'));
+    const nb = typeof vb === 'number' ? vb : parseFloat(String(vb).replace(',', '.'));
+    if (!isNaN(na) && !isNaN(nb)) return recnSortAsc ? na - nb : nb - na;
+    return recnSortAsc
+      ? String(va).localeCompare(String(vb), 'es')
+      : String(vb).localeCompare(String(va), 'es');
+  });
+
+  document.getElementById('supCountBadge').innerHTML =
+    `<strong>${data.length}</strong> / ${allData.length} registros`;
+
+  const tbody = document.getElementById('recnBody');
+  if (!data.length) {
+    tbody.innerHTML = '<tr><td colspan="14" style="text-align:center;padding:40px;color:var(--text3)">Sin resultados</td></tr>';
+    return;
+  }
+
+  // Acumuladores para totales y promedios ponderados
+  let totSup = 0, totKgFert = 0;
+  const wpPairs = { nSuelo: [], nObj: [], dosCalc: [], dosRecom: [], nAlc: [] };
+
+  // INFO ANÁLISIS N truncado con tooltip
+  const infoTrunc = v => {
+    if (!v || !hasVal(v)) return '—';
+    const s = String(v).trim();
+    return s.length > 38
+      ? `<span title="${s.replace(/"/g,'&quot;')}" style="cursor:help">${s.slice(0,38)}…</span>`
+      : s;
+  };
+
+  const nd = v => v !== null ? fmtHa(v) : '—';
+
+  const rows = data.map(r => {
+    const sup       = parseSup(r['Superficie Sembrada']);
+    const nSuelo    = pn(getF(r, 'Nitrogeno suelo (0-60 cm)', 'NitrogenoSuelo'));
+    const nObj      = pn(getF(r, 'Nitrogeno Objetivo', 'NitrogenoObjetivo'));
+    const dosCalc   = r._dosisCalc;
+    const dosRecom  = r._dosisRecom;
+    const nAlc      = pn(getF(r, 'N alcanzado real', 'NAlcanzadoReal'));
+    const kgFert    = pn(getF(r, 'KG FERT 2 NECESARIOS'));
+
+    totSup += sup;
+    if (kgFert !== null) totKgFert += kgFert;
+    if (sup > 0) {
+      wpPairs.nSuelo.push([nSuelo,    sup]);
+      wpPairs.nObj.push([nObj,        sup]);
+      wpPairs.dosCalc.push([dosCalc,  sup]);
+      wpPairs.dosRecom.push([dosRecom, sup]);
+      wpPairs.nAlc.push([nAlc,        sup]);
+    }
+
+    return `<tr>
+      <td style="font-weight:600">${r['Campo']||'—'}</td>
+      <td style="font-family:'IBM Plex Mono',monospace;font-size:12px">${r['Lote']||'—'}</td>
+      <td style="max-width:115px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${(r['Ambiente Regional']||'').replace(/"/g,'&quot;')}">${r['Ambiente Regional']||'—'}</td>
+      <td>${r['Antecesor']||'—'}</td>
+      <td style="font-size:12px">${r['Fertilizante P Producto 1']||'—'}</td>
+      <td style="font-weight:500;font-size:12px">${r['Fertilizante N Producto 2']||'—'}</td>
+      <td style="font-size:11px;color:var(--text2)">${infoTrunc(getF(r,'INFO ANÁLISIS N','INFO ANALISIS N','InfoAnalisisN'))}</td>
+      <td class="num">${sup ? fmtHa(sup) : '—'}</td>
+      <td class="num">${nd(nSuelo)}</td>
+      <td class="num">${nd(nObj)}</td>
+      <td class="num">${nd(dosCalc)}</td>
+      <td class="num">${nd(dosRecom)}</td>
+      <td class="num">${nd(nAlc)}</td>
+      <td class="num" style="font-weight:600">${kgFert !== null ? fmtHa(kgFert) : '—'}</td>
+    </tr>`;
+  });
+
+  // Totales y promedios ponderados
+  const dosisPromPond = totSup > 0 ? totKgFert / totSup : null;
+  const wpNSuelo   = wAvg(wpPairs.nSuelo);
+  const wpNObj     = wAvg(wpPairs.nObj);
+  const wpDosCalc  = wAvg(wpPairs.dosCalc);
+  const wpDosRecom = wAvg(wpPairs.dosRecom);
+  const wpNAlc     = wAvg(wpPairs.nAlc);
+
+  rows.push(`<tr class="total-row">
+    <td colspan="7" style="font-weight:700">
+      TOTAL / Prom. pond.
+      <span style="font-size:10px;font-weight:400;color:var(--text3);margin-left:6px">(promedios ponderados por sup.)</span>
+    </td>
+    <td class="num grand-total">${fmtHa(totSup)}</td>
+    <td class="num grand-total">${nd(wpNSuelo)}</td>
+    <td class="num grand-total">${nd(wpNObj)}</td>
+    <td class="num grand-total">${nd(wpDosCalc)}</td>
+    <td class="num grand-total">${nd(wpDosRecom)}</td>
+    <td class="num grand-total">${nd(wpNAlc)}</td>
+    <td class="num grand-total">
+      ${fmtHa(totKgFert)}
+      ${dosisPromPond !== null
+        ? `<br><span style="font-size:10px;font-weight:400;color:var(--text2)">${fmtHa(dosisPromPond)} kg/ha pond.</span>`
+        : ''}
+    </td>
+  </tr>`);
+
+  tbody.innerHTML = rows.join('');
+}
+
 // ── EXPORTAR EXCEL ────────────────────────────────────────────────────
 function exportPlanExcel() {
   const data = [...getSupFiltered()].sort((a, b) => {
@@ -1210,10 +1554,13 @@ function exportPlanExcel() {
   let totSup = 0, totFertP = 0, totSem = 0;
   const filas = data.map(r => {
     const sup   = vn(r, 'Superficie Sembrada');
-    const fertP = vn(r, 'KG FERT P NECESARIOS');
+    // Usar getF para matching case-insensitive de la columna de fertilizante
+    const fertPRaw = getF(r, 'KG FERT P NECESARIOS');
+    const fertP = fertPRaw ? (parseFloat(String(fertPRaw).replace(',','.')) || null) : null;
     const esBolsas = cultivoUsaBolsas(r['Cultivo']);
-    const semVal = usaBolsas
-      ? (esBolsas ? vn(r, 'NRO BOLSAS NECESARIAS Mz/Gi') : vn(r, 'kg Semilla total'))
+    // Semilla siempre por fila: Girasol/Maíz → bolsas, resto → kg
+    const semVal = esBolsas
+      ? vn(r, 'NRO BOLSAS NECESARIAS Mz/Gi')
       : vn(r, 'kg Semilla total');
     if (sup)    totSup    += sup;
     if (fertP)  totFertP  += fertP;
