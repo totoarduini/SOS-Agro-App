@@ -235,6 +235,7 @@ td.mono { font-family: 'IBM Plex Mono', monospace; font-size: 12px; }
 .pivot-tbl tr.total-row td.num { color: var(--green); }
 .pivot-tbl tr:last-child td { border-bottom: none; }
 .pivot-tbl td.grand-total { color: var(--green); font-weight: 700; }
+.pivot-tbl tbody tr[style*="cursor"]:hover td { background: #f0fdf4; }
 .chart-wrap { padding: 16px; }
 .sup-stat { display: flex; flex-direction: column; gap: 2px; padding: 10px 16px; border-bottom: 1px solid var(--border); }
 .sup-stat-label { font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: var(--text3); text-transform: uppercase; }
@@ -629,6 +630,27 @@ function getF(row, ...names) {
   return null;
 }
 
+// Parsea número en formato argentino: punto = miles, coma = decimal
+// Ej: "1.500" → 1500, "1.500,25" → 1500.25, "1,5" → 1.5
+function pn(v) {
+  if (v === null || v === undefined) return null;
+  let s = String(v).trim();
+  if (!s) return null;
+  if (s.includes(',') && s.includes('.')) {
+    // Ambos: punto = miles, coma = decimal
+    s = s.replace(/\./g, '').replace(',', '.');
+  } else if (s.includes(',')) {
+    // Solo coma = decimal
+    s = s.replace(',', '.');
+  } else if (/^\d{1,3}(\.\d{3})+$/.test(s)) {
+    // Solo punto con patrón X.YYY → separador de miles
+    s = s.replace(/\./g, '');
+  }
+  // Si solo tiene punto como decimal (ej "1.5"), se deja igual
+  const n = parseFloat(s);
+  return isNaN(n) ? null : n;
+}
+
 // ── LOAD ─────────────────────────────────────────────────────────────
 window.onload = () => {
   loadData();
@@ -710,12 +732,14 @@ function closeAllDropdowns() {
   document.querySelectorAll('.ms-trigger').forEach(t => t.classList.remove('active'));
 }
 
-// Calcula opciones disponibles para cada filtro dada la selección de los anteriores
+// Calcula opciones disponibles ignorando la propia selección del filtro (bidireccional)
 function getAvailable(forId) {
-  const idx = FILTER_DEF.findIndex(f => f.id === forId);
   return allData.filter(r => {
-    for (let i = 0; i < idx; i++) {
-      const fd = FILTER_DEF[i];
+    const campo = r['Campo'] ? String(r['Campo']).trim() : '';
+    const cultivo = r['Cultivo'] ? String(r['Cultivo']).trim() : '';
+    if (!campo || !cultivo) return false;
+    for (const fd of FILTER_DEF) {
+      if (fd.id === forId) continue;
       if (SEL[fd.id].size > 0 && !SEL[fd.id].has(r[fd.col])) return false;
     }
     return true;
@@ -779,24 +803,16 @@ function refreshDropdown(fd) {
   }
 }
 
-function refreshAllDropdowns() {
-  FILTER_DEF.forEach(fd => refreshDropdown(fd));
-}
-
 function onFilterChange(changedId) {
-  // Para filtros que vienen DESPUÉS del que cambió, resetear selección si ya no están disponibles
-  const idx = FILTER_DEF.findIndex(f => f.id === changedId);
-  for (let i = idx + 1; i < FILTER_DEF.length; i++) {
-    const fd = FILTER_DEF[i];
-    const available = getAvailable(fd.id);
-    const availVals = new Set(available.map(r => r[fd.col]).filter(Boolean));
-    // Quitar valores seleccionados que ya no están disponibles
+  // Bidireccional: recalcular todos los filtros, limpiar selecciones que ya no están disponibles
+  for (const fd of FILTER_DEF) {
+    if (fd.id === changedId) continue;
+    const availVals = new Set(getAvailable(fd.id).map(r => r[fd.col]).filter(Boolean));
     for (const v of [...SEL[fd.id]]) {
       if (!availVals.has(v)) SEL[fd.id].delete(v);
     }
-    refreshDropdown(fd);
   }
-  refreshDropdown(FILTER_DEF[idx]); // update trigger text
+  refreshAllDropdowns();
   applyFilters();
 }
 
@@ -867,11 +883,10 @@ function buildSupFilterDropdowns() {
 }
 
 function getSupAvailable(forId) {
-  const idx = SUP_FILTER_DEF.findIndex(f => f.id === forId);
   return allData.filter(r => {
     if (!r['Campo'] || !r['Cultivo']) return false;
-    for (let i = 0; i < idx; i++) {
-      const fd = SUP_FILTER_DEF[i];
+    for (const fd of SUP_FILTER_DEF) {
+      if (fd.id === forId) continue;
       if (SUP_SEL[fd.selKey].size > 0 && !SUP_SEL[fd.selKey].has(r[fd.col])) return false;
     }
     return true;
@@ -912,14 +927,15 @@ function refreshAllSupDropdowns() {
 }
 
 function onSupFilterChange(changedId) {
-  const idx = SUP_FILTER_DEF.findIndex(f => f.id === changedId);
-  for (let i = idx + 1; i < SUP_FILTER_DEF.length; i++) {
-    const fd = SUP_FILTER_DEF[i];
+  // Bidireccional: recalcular todos los filtros, limpiar selecciones que ya no están disponibles
+  for (const fd of SUP_FILTER_DEF) {
+    if (fd.id === changedId) continue;
     const availVals = new Set(getSupAvailable(fd.id).map(r => r[fd.col]).filter(Boolean));
-    for (const v of [...SUP_SEL[fd.selKey]]) { if (!availVals.has(v)) SUP_SEL[fd.selKey].delete(v); }
-    refreshSupDropdown(fd);
+    for (const v of [...SUP_SEL[fd.selKey]]) {
+      if (!availVals.has(v)) SUP_SEL[fd.selKey].delete(v);
+    }
   }
-  refreshSupDropdown(SUP_FILTER_DEF[idx]);
+  refreshAllSupDropdowns();
   if (activeTab === 'superficies') renderSuperficies();
   if (activeTab === 'porlote')     renderPorLote();
   if (activeTab === 'suelo')       renderSuelo();
@@ -1072,17 +1088,22 @@ function renderPorLote() {
   document.getElementById('supCountBadge').innerHTML = `<strong>${data.length}</strong> / ${allData.length} registros`;
   const tbody = document.getElementById('loteBody');
   if (!data.length) { tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:40px;color:var(--text3)">Sin resultados</td></tr>'; return; }
-  tbody.innerHTML = data.map(r => {
+  tbody.innerHTML = '';
+  data.forEach(r => {
+    const idx = allData.indexOf(r);
     const ha = parseSup(r['Superficie Sembrada']);
-    return `<tr>
+    const tr = document.createElement('tr');
+    tr.style.cursor = 'pointer';
+    tr.onclick = () => openDrawer(r, idx);
+    tr.innerHTML = `
       <td>${r['EMPRESA']||'—'}</td>
       <td style="font-weight:600">${r['Campo']||'—'}</td>
       <td style="font-family:'IBM Plex Mono',monospace;font-size:12px">${r['Lote']||'—'}</td>
       <td>${cultivoTag(r['Cultivo'])}</td>
       <td>${r['Antecesor']||'—'}</td>
-      <td class="num">${ha ? fmtHa(ha) : '—'}</td>
-    </tr>`;
-  }).join('');
+      <td class="num">${ha ? fmtHa(ha) : '—'}</td>`;
+    tbody.appendChild(tr);
+  });
 }
 
 // ── SUELO ─────────────────────────────────────────────────────────────
@@ -1106,11 +1127,16 @@ function renderSuelo() {
   document.getElementById('supCountBadge').innerHTML = `<strong>${data.length}</strong> registros con análisis`;
   const tbody = document.getElementById('sueloBody');
   if (!data.length) { tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;padding:40px;color:var(--text3)">Sin datos de análisis para los filtros seleccionados</td></tr>'; return; }
-  tbody.innerHTML = data.map(r => {
+  tbody.innerHTML = '';
+  data.forEach(r => {
+    const idx = allData.indexOf(r);
     const v = col => { const val = r[col]; return (val && hasVal(val)) ? val : '—'; };
     const pVal = parseFloat(String(r['P']||'').replace(',','.'));
     const pClass = isNaN(pVal) ? '' : pVal < 10 ? 'style="color:#ef4444;font-weight:700"' : pVal < 20 ? 'style="color:#f59e0b;font-weight:600"' : 'style="color:var(--green);font-weight:600"';
-    return `<tr>
+    const tr = document.createElement('tr');
+    tr.style.cursor = 'pointer';
+    tr.onclick = () => openDrawer(r, idx);
+    tr.innerHTML = `
       <td>${r['EMPRESA']||'—'}</td>
       <td style="font-weight:600">${r['Campo']||'—'}</td>
       <td style="font-family:'IBM Plex Mono',monospace;font-size:12px">${r['Lote']||'—'}</td>
@@ -1119,9 +1145,9 @@ function renderSuelo() {
       <td class="num">${v('pH')}</td>
       <td class="num">${v('M.O.')}</td>
       <td class="num" ${pClass}>${v('P')}</td>
-      <td class="num">${v('Año análisis P')}</td>
-    </tr>`;
-  }).join('');
+      <td class="num">${v('Año análisis P')}</td>`;
+    tbody.appendChild(tr);
+  });
 }
 
 // ── GENÉTICA ──────────────────────────────────────────────────────────
@@ -1166,16 +1192,29 @@ function renderGenetica() {
 
   const grandTotal = rows.reduce((s, r) => s + r.ha, 0);
 
-  // Tabla
   const tbody = document.getElementById('geneticaBody');
   if (!rows.length) { tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;padding:40px;color:var(--text3)">Sin datos</td></tr>'; return; }
-  tbody.innerHTML = rows.map(r => `<tr>
-    <td style="font-weight:600">${r.gen}</td>
-    <td>${cultivoTag(r.cultivo)}</td>
-    <td class="num">${fmtHa(r.ha)}</td>
-    <td class="num">${r.lotes}</td>
-  </tr>`).join('')
-  + `<tr class="total-row"><td>TOTAL</td><td></td><td class="num grand-total">${fmtHa(grandTotal)}</td><td class="num grand-total">${rows.reduce((s,r)=>s+r.lotes,0)}</td></tr>`;
+  tbody.innerHTML = '';
+  rows.forEach(r => {
+    const tr = document.createElement('tr');
+    tr.style.cursor = 'pointer';
+    tr.title = `Ver registros de ${r.gen} (${r.lotes} lote${r.lotes!==1?'s':''})`;
+    tr.onclick = () => {
+      // Buscar el primer registro real que tenga esta genética y abrir drawer
+      const match = allData.find(d => d['Genética'] && d['Genética'].trim() === r.gen);
+      if (match) openDrawer(match, allData.indexOf(match));
+    };
+    tr.innerHTML = `
+      <td style="font-weight:600">${r.gen}</td>
+      <td>${cultivoTag(r.cultivo)}</td>
+      <td class="num">${fmtHa(r.ha)}</td>
+      <td class="num">${r.lotes}</td>`;
+    tbody.appendChild(tr);
+  });
+  const totRow = document.createElement('tr');
+  totRow.className = 'total-row';
+  totRow.innerHTML = `<td>TOTAL</td><td></td><td class="num grand-total">${fmtHa(grandTotal)}</td><td class="num grand-total">${rows.reduce((s,r)=>s+r.lotes,0)}</td>`;
+  tbody.appendChild(totRow);
 
   // Pie chart genética
   const top = rows.slice(0, 12); // máximo 12 en el gráfico
@@ -1271,16 +1310,16 @@ function renderPlanSiembra() {
 
   let totSup = 0, totFertP = 0, totSemilla = 0;
 
-  const rows = data.map(r => {
+  tbody.innerHTML = '';
+  data.forEach(r => {
+    const idx = allData.indexOf(r);
     const vn = key => { const n = parseFloat(String(r[key]||'').replace(',','.')); return isNaN(n) ? null : n; };
     const vs = key => (r[key] && hasVal(r[key])) ? r[key] : '—';
 
     const sup   = vn('Superficie Sembrada');
-    // Usar getF para matching case-insensitive de la columna de fertilizante
     const fertPRaw = getF(r, 'KG FERT P NECESARIOS');
     const fertP = fertPRaw ? (parseFloat(String(fertPRaw).replace(',','.')) || null) : null;
 
-    // Elegir columna de semilla según el cultivo de la fila (siempre por fila, independiente del modo global)
     const esBolsas = cultivoUsaBolsas(r['Cultivo']);
     const semVal = esBolsas
       ? vn('NRO BOLSAS NECESARIAS Mz/Gi')
@@ -1294,7 +1333,10 @@ function renderPlanSiembra() {
       ? (esBolsas ? Math.round(semVal).toLocaleString('es-AR') : fmtHa(semVal))
       : '—';
 
-    return `<tr>
+    const tr = document.createElement('tr');
+    tr.style.cursor = 'pointer';
+    tr.onclick = () => openDrawer(r, idx);
+    tr.innerHTML = `
       <td class="num" style="font-weight:700;color:var(--text)">${vs('Orden de Siembra')}</td>
       <td style="font-weight:600">${r['Campo']||'—'}</td>
       <td style="font-family:'IBM Plex Mono',monospace;font-size:12px">${r['Lote']||'—'}</td>
@@ -1306,23 +1348,23 @@ function renderPlanSiembra() {
       <td class="num">${vs('Densidad siembra Recomendada')}</td>
       <td class="num">${vs('Dosis Fert. P Producto 1')}</td>
       <td class="num">${fertP ? fmtHa(fertP) : '—'}</td>
-      <td class="num">${semDisplay}</td>
-    </tr>`;
+      <td class="num">${semDisplay}</td>`;
+    tbody.appendChild(tr);
   });
 
   const totSemDisplay = usaBolsas
     ? Math.round(totSemilla).toLocaleString('es-AR')
     : fmtHa(totSemilla);
 
-  rows.push(`<tr class="total-row">
+  const totRow = document.createElement('tr');
+  totRow.className = 'total-row';
+  totRow.innerHTML = `
     <td colspan="6" style="font-weight:700">TOTAL</td>
     <td class="num grand-total">${fmtHa(totSup)}</td>
     <td></td><td></td><td></td>
     <td class="num grand-total">${fmtHa(totFertP)}</td>
-    <td class="num grand-total">${totSemDisplay}</td>
-  </tr>`);
-
-  tbody.innerHTML = rows.join('');
+    <td class="num grand-total">${totSemDisplay}</td>`;
+  tbody.appendChild(totRow);
 }
 
 // ── FERTILIZANTE TOTAL ────────────────────────────────────────────────
@@ -1350,7 +1392,9 @@ function renderFertilizante() {
     tbody.innerHTML = '<tr><td colspan="10" style="text-align:center;padding:40px;color:var(--text3)">Sin resultados</td></tr>';
   } else {
     let totSup = 0, totFertP = 0;
-    tbody.innerHTML = data.map(r => {
+    tbody.innerHTML = '';
+    data.forEach(r => {
+      const idx = allData.indexOf(r);
       const sup    = parseSup(r['Superficie Sembrada']);
       const fertP  = pn(getF(r, 'KG FERT P NECESARIOS')) ?? 0;
       const pVal   = r['P'] && hasVal(r['P']) ? r['P'] : '—';
@@ -1358,7 +1402,10 @@ function renderFertilizante() {
       const pClass = pNum === null ? '' : pNum < 10 ? 'style="color:#ef4444;font-weight:700"' : pNum < 20 ? 'style="color:#f59e0b;font-weight:600"' : 'style="color:var(--green);font-weight:600"';
       totSup   += sup;
       totFertP += fertP;
-      return `<tr>
+      const tr = document.createElement('tr');
+      tr.style.cursor = 'pointer';
+      tr.onclick = () => openDrawer(r, idx);
+      tr.innerHTML = `
         <td style="font-weight:600">${r['Campo']||'—'}</td>
         <td style="font-family:'IBM Plex Mono',monospace;font-size:12px">${r['Lote']||'—'}</td>
         <td style="max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${r['Ambiente Regional']||'—'}</td>
@@ -1368,14 +1415,17 @@ function renderFertilizante() {
         <td class="num" ${pClass}>${pVal}</td>
         <td class="num">${r['Año análisis P']||'—'}</td>
         <td class="num">${r['Dosis Fert. P Producto 1']||'—'}</td>
-        <td class="num" style="font-weight:600">${fertP ? fmtHa(fertP) : '—'}</td>
-      </tr>`;
-    }).join('') + `<tr class="total-row">
+        <td class="num" style="font-weight:600">${fertP ? fmtHa(fertP) : '—'}</td>`;
+      tbody.appendChild(tr);
+    });
+    const totRow = document.createElement('tr');
+    totRow.className = 'total-row';
+    totRow.innerHTML = `
       <td colspan="5" style="font-weight:700">TOTAL</td>
       <td class="num grand-total">${fmtHa(totSup)}</td>
       <td></td><td></td><td></td>
-      <td class="num grand-total">${fmtHa(totFertP)}</td>
-    </tr>`;
+      <td class="num grand-total">${fmtHa(totFertP)}</td>`;
+    tbody.appendChild(totRow);
   }
 
   // ── Resumen por Fertilizante Fosforado ────────────────────────────
@@ -1432,27 +1482,6 @@ function sortRecN(col) {
   renderRecN();
 }
 
-// Parsea número en formato argentino: punto = miles, coma = decimal
-// Ej: "1.500" → 1500, "1.500,25" → 1500.25, "1,5" → 1.5
-function pn(v) {
-  if (v === null || v === undefined) return null;
-  let s = String(v).trim();
-  if (!s) return null;
-  if (s.includes(',') && s.includes('.')) {
-    // Ambos: punto = miles, coma = decimal
-    s = s.replace(/\./g, '').replace(',', '.');
-  } else if (s.includes(',')) {
-    // Solo coma = decimal
-    s = s.replace(',', '.');
-  } else if (/^\d{1,3}(\.\d{3})+$/.test(s)) {
-    // Solo punto con patrón X.YYY → separador de miles
-    s = s.replace(/\./g, '');
-  }
-  // Si solo tiene punto como decimal (ej "1.5"), se deja igual
-  const n = parseFloat(s);
-  return isNaN(n) ? null : n;
-}
-
 // Promedio ponderado: suma(val * peso) / suma(peso), solo para pares donde ambos son válidos
 function wAvg(pairs) {
   let sumProd = 0, sumPeso = 0;
@@ -1500,7 +1529,9 @@ function renderRecN() {
   };
   const nd = v => v !== null ? fmtHa(v) : '—';
 
-  tbody.innerHTML = data.map(r => {
+  tbody.innerHTML = '';
+  data.forEach(r => {
+    const origIdx = allData.indexOf(r);
     const sup      = parseSup(r['Superficie Sembrada']);
     const nSuelo   = pn(getF(r, 'Nitrogeno suelo (0-60 cm)', 'NitrogenoSuelo'));
     const nObj     = pn(getF(r, 'Nitrogeno Objetivo', 'NitrogenoObjetivo'));
@@ -1517,7 +1548,10 @@ function renderRecN() {
       wpPairs.dosRecom.push([dosRecom, sup]);
       wpPairs.nAlc.push([nAlc,        sup]);
     }
-    return `<tr>
+    const tr = document.createElement('tr');
+    tr.style.cursor = 'pointer';
+    tr.onclick = () => openDrawer(r, origIdx);
+    tr.innerHTML = `
       <td style="font-weight:600">${r['Campo']||'—'}</td>
       <td style="font-family:'IBM Plex Mono',monospace;font-size:12px">${r['Lote']||'—'}</td>
       <td style="max-width:115px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${(r['Ambiente Regional']||'').replace(/"/g,'&quot;')}">${r['Ambiente Regional']||'—'}</td>
@@ -1531,9 +1565,9 @@ function renderRecN() {
       <td class="num">${nd(dosCalc)}</td>
       <td class="num">${nd(dosRecom)}</td>
       <td class="num">${nd(nAlc)}</td>
-      <td class="num" style="font-weight:600">${kgFert !== null ? fmtHa(kgFert) : '—'}</td>
-    </tr>`;
-  }).join('');
+      <td class="num" style="font-weight:600">${kgFert !== null ? fmtHa(kgFert) : '—'}</td>`;
+    tbody.appendChild(tr);
+  });
 
   const dosisPromPond = totSup > 0 ? totKgFert / totSup : null;
   tbody.innerHTML += `<tr class="total-row">
@@ -2218,8 +2252,8 @@ function cultivoTag(c) {
 }
 function fmt(val) {
   if (!val) return '';
-  const n = parseFloat(String(val).replace(',','.'));
-  return isNaN(n) ? val : n.toLocaleString('es-AR');
+  const n = pn(val);
+  return n === null ? String(val) : n.toLocaleString('es-AR');
 }
 
 document.addEventListener('keydown', e => { if(e.key==='Escape') closeDrawer(); });
