@@ -6,332 +6,245 @@
 <title>Registros de Campo — SOS Agro</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
 <style>
-  @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap');
 
-  :root {
-    --bg:      #f1f5f9;
-    --surface: #ffffff;
-    --surface2:#f8fafc;
-    --border:  #e2e8f0;
-    --border2: #cbd5e1;
-    --green:   #16a34a;
-    --green-bg:#dcfce7;
-    --yellow-bg:#fef9c3;
-    --blue-bg: #dbeafe;
-    --orange-bg:#ffedd5;
-    --purple-bg:#ede9fe;
-    --text:    #0f172a;
-    --text2:   #475569;
-    --text3:   #94a3b8;
-    --shadow:  0 1px 3px rgba(0,0,0,.08), 0 1px 2px rgba(0,0,0,.05);
-    --shadow-lg: 0 10px 40px rgba(0,0,0,.15);
-  }
+:root {
+  --bg:      #f1f5f9;
+  --surface: #ffffff;
+  --surface2:#f8fafc;
+  --border:  #e2e8f0;
+  --border2: #cbd5e1;
+  --green:   #16a34a;
+  --green-bg:#dcfce7;
+  --text:    #0f172a;
+  --text2:   #475569;
+  --text3:   #94a3b8;
+  --shadow:  0 1px 3px rgba(0,0,0,.08);
+  --shadow-lg: 0 10px 40px rgba(0,0,0,.15);
+  --top-offset: 0px; /* updated by JS */
+}
 
-  * { box-sizing: border-box; margin: 0; padding: 0; }
+* { box-sizing: border-box; margin: 0; padding: 0; }
+body { font-family: 'IBM Plex Sans', sans-serif; background: var(--bg); color: var(--text); min-height: 100vh; font-size: 14px; }
 
-  body {
-    font-family: 'IBM Plex Sans', sans-serif;
-    background: var(--bg);
-    color: var(--text);
-    min-height: 100vh;
-    font-size: 14px;
-  }
+/* ── TOP BAR (sticky como bloque) ── */
+#topBar {
+  position: sticky;
+  top: 0;
+  z-index: 100;
+  box-shadow: 0 2px 8px rgba(0,0,0,.08);
+}
 
-  /* ── HEADER ── */
-  header {
-    background: var(--surface);
-    border-bottom: 1px solid var(--border);
-    padding: 0 20px;
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    height: 54px;
-    position: sticky;
-    top: 0;
-    z-index: 100;
-    box-shadow: var(--shadow);
-  }
-  .logo { display: flex; align-items: center; gap: 10px; }
-  .logo-icon {
-    width: 32px; height: 32px;
-    background: var(--green);
-    border-radius: 8px;
-    display: flex; align-items: center; justify-content: center;
-    font-size: 17px; flex-shrink: 0;
-  }
-  .logo-text {
-    font-family: 'IBM Plex Mono', monospace;
-    font-weight: 600; font-size: 14px; color: var(--text);
-  }
-  .logo-text span { color: var(--green); }
-  .header-right { display: flex; align-items: center; gap: 10px; }
+header {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 0 20px;
+  display: flex; align-items: center; justify-content: space-between;
+  height: 54px;
+}
+.logo { display: flex; align-items: center; gap: 10px; }
+.logo-icon { width: 32px; height: 32px; background: var(--green); border-radius: 8px; display: flex; align-items: center; justify-content: center; font-size: 17px; flex-shrink: 0; }
+.logo-text { font-family: 'IBM Plex Mono', monospace; font-weight: 600; font-size: 14px; }
+.logo-text span { color: var(--green); }
+.header-right { display: flex; align-items: center; gap: 10px; }
+.status-pill { display: flex; align-items: center; gap: 5px; background: var(--surface2); border: 1px solid var(--border); border-radius: 20px; padding: 4px 10px; font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--text3); }
+.status-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--text3); }
+.status-dot.ok { background: var(--green); animation: pulse 2.5s infinite; }
+@keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+.btn-new { background: var(--green); color: #fff; border: none; border-radius: 7px; padding: 7px 16px; font-family: 'IBM Plex Sans', sans-serif; font-weight: 600; font-size: 13px; cursor: pointer; transition: opacity .15s; }
+.btn-new:hover { opacity: .85; }
 
-  .status-pill {
-    display: flex; align-items: center; gap: 5px;
-    background: var(--surface2); border: 1px solid var(--border);
-    border-radius: 20px; padding: 4px 10px;
-    font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--text3);
-  }
-  .status-dot { width: 7px; height: 7px; border-radius: 50%; background: var(--text3); }
-  .status-dot.ok { background: var(--green); animation: pulse 2.5s infinite; }
-  @keyframes pulse { 0%,100%{opacity:1} 50%{opacity:.4} }
+/* ── FILTERS BAR ── */
+.filters-bar {
+  background: var(--surface);
+  border-bottom: 1px solid var(--border);
+  padding: 10px 20px;
+  display: flex; gap: 10px; flex-wrap: wrap; align-items: center;
+}
+.filter-group { display: flex; align-items: center; gap: 6px; }
+.filter-label { font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--text3); text-transform: uppercase; letter-spacing: .5px; white-space: nowrap; }
 
-  .btn-new {
-    background: var(--green); color: #fff;
-    border: none; border-radius: 7px; padding: 7px 16px;
-    font-family: 'IBM Plex Sans', sans-serif; font-weight: 600; font-size: 13px;
-    cursor: pointer; transition: opacity .15s;
-  }
-  .btn-new:hover { opacity: .85; }
+/* Search input */
+.search-input { background: var(--surface2); border: 1px solid var(--border); border-radius: 6px; color: var(--text); padding: 6px 10px; font-family: 'IBM Plex Sans', sans-serif; font-size: 13px; outline: none; width: 180px; transition: border-color .15s, box-shadow .15s; }
+.search-input:focus { border-color: var(--green); box-shadow: 0 0 0 3px rgba(22,163,74,.1); }
 
-  /* ── FILTERS ── */
-  .filters-bar {
-    background: var(--surface); border-bottom: 1px solid var(--border);
-    padding: 10px 20px; display: flex; gap: 12px; flex-wrap: wrap; align-items: center;
-  }
-  .filter-group { display: flex; align-items: center; gap: 6px; }
-  .filter-label {
-    font-family: 'IBM Plex Mono', monospace; font-size: 11px;
-    color: var(--text3); text-transform: uppercase; letter-spacing: .5px; white-space: nowrap;
-  }
-  select, input[type="text"] {
-    background: var(--surface2); border: 1px solid var(--border);
-    border-radius: 6px; color: var(--text); padding: 5px 10px;
-    font-family: 'IBM Plex Sans', sans-serif; font-size: 13px; outline: none;
-    transition: border-color .15s, box-shadow .15s;
-  }
-  select:focus, input[type="text"]:focus {
-    border-color: var(--green); box-shadow: 0 0 0 3px rgba(22,163,74,.1);
-  }
-  .search-input { width: 200px; }
-  .count-badge {
-    font-family: 'IBM Plex Mono', monospace; font-size: 12px;
-    color: var(--text3); margin-left: auto; white-space: nowrap;
-  }
-  .count-badge strong { color: var(--green); }
+/* ── MULTI-SELECT DROPDOWN ── */
+.ms-wrap { position: relative; }
 
-  /* ── MAIN ── */
-  .main { padding: 20px; max-width: 1400px; margin: 0 auto; }
+.ms-trigger {
+  display: flex; align-items: center; gap: 6px;
+  background: var(--surface2); border: 1px solid var(--border);
+  border-radius: 6px; padding: 5px 10px; cursor: pointer;
+  font-size: 13px; color: var(--text);
+  transition: border-color .15s, box-shadow .15s;
+  white-space: nowrap; min-width: 120px;
+  user-select: none;
+}
+.ms-trigger:hover { border-color: var(--border2); }
+.ms-trigger.active { border-color: var(--green); box-shadow: 0 0 0 3px rgba(22,163,74,.1); }
+.ms-trigger.has-selection { border-color: var(--green); background: var(--green-bg); color: var(--green); font-weight: 600; }
+.ms-trigger-text { flex: 1; overflow: hidden; text-overflow: ellipsis; max-width: 130px; }
+.ms-arrow { font-size: 10px; color: var(--text3); transition: transform .2s; }
+.ms-trigger.active .ms-arrow { transform: rotate(180deg); }
 
-  /* ── TABLE ── */
-  .table-card {
-    background: var(--surface); border: 1px solid var(--border);
-    border-radius: 12px; overflow: hidden; box-shadow: var(--shadow);
-  }
-  .table-wrap { overflow-x: auto; }
-  table { width: 100%; border-collapse: collapse; font-size: 13px; }
-  thead { background: var(--surface2); position: sticky; top: 54px; z-index: 10; }
-  th {
-    padding: 10px 14px; text-align: left;
-    font-family: 'IBM Plex Mono', monospace; font-size: 10px; font-weight: 600;
-    color: var(--text3); text-transform: uppercase; letter-spacing: .6px;
-    white-space: nowrap; border-bottom: 1px solid var(--border);
-    cursor: pointer; user-select: none;
-  }
-  th:hover { color: var(--text2); }
-  th.sorted { color: var(--green); }
-  tbody tr { border-bottom: 1px solid var(--border); cursor: pointer; transition: background .1s; }
-  tbody tr:last-child { border-bottom: none; }
-  tbody tr:hover { background: #f0fdf4; }
-  tbody tr.active-row { background: #dcfce7; }
-  td { padding: 10px 14px; white-space: nowrap; color: var(--text2); }
-  td.primary { color: var(--text); font-weight: 600; }
-  td.mono { font-family: 'IBM Plex Mono', monospace; font-size: 12px; }
+.ms-dropdown {
+  display: none;
+  position: absolute;
+  top: calc(100% + 4px);
+  left: 0;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: 0 4px 20px rgba(0,0,0,.12);
+  z-index: 500;
+  min-width: 180px;
+  max-height: 260px;
+  overflow-y: auto;
+  padding: 4px 0;
+}
+.ms-dropdown.open { display: block; }
 
-  .tag {
-    display: inline-block; padding: 2px 9px; border-radius: 20px;
-    font-size: 11px; font-weight: 600; font-family: 'IBM Plex Mono', monospace;
-  }
-  .tag-soja    { background: var(--yellow-bg); color: #854d0e; }
-  .tag-maiz    { background: var(--blue-bg);   color: #1e40af; }
-  .tag-trigo   { background: #fef3c7;          color: #92400e; }
-  .tag-girasol { background: var(--orange-bg); color: #9a3412; }
-  .tag-cebada  { background: var(--purple-bg); color: #5b21b6; }
-  .tag-other   { background: var(--surface2);  color: var(--text2); }
+.ms-option {
+  display: flex; align-items: center; gap: 8px;
+  padding: 7px 12px; cursor: pointer;
+  font-size: 13px; color: var(--text2);
+  transition: background .1s;
+}
+.ms-option:hover { background: var(--surface2); }
+.ms-option.all-option { font-weight: 600; color: var(--text); border-bottom: 1px solid var(--border); margin-bottom: 2px; }
+.ms-option input[type="checkbox"] { accent-color: var(--green); width: 14px; height: 14px; cursor: pointer; flex-shrink: 0; }
+.ms-no-options { padding: 12px; font-size: 12px; color: var(--text3); font-family: 'IBM Plex Mono', monospace; text-align: center; }
 
-  .rinde-num { font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: var(--text); font-weight: 600; }
-  .rinde-empty { color: var(--text3); }
+.count-badge { font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: var(--text3); margin-left: auto; white-space: nowrap; }
+.count-badge strong { color: var(--green); }
 
-  /* ── STATES ── */
-  .state-box {
-    display: flex; flex-direction: column; align-items: center;
-    justify-content: center; padding: 60px 20px; gap: 12px; color: var(--text3);
-  }
-  .spinner {
-    width: 28px; height: 28px; border: 2px solid var(--border);
-    border-top-color: var(--green); border-radius: 50%; animation: spin .7s linear infinite;
-  }
-  @keyframes spin { to { transform: rotate(360deg); } }
-  .state-box p { font-family: 'IBM Plex Mono', monospace; font-size: 12px; }
-  .error-msg {
-    background: #fef2f2; border: 1px solid #fecaca; border-radius: 8px;
-    padding: 16px; color: #991b1b; font-size: 13px;
-    font-family: 'IBM Plex Mono', monospace; white-space: pre-wrap;
-  }
+/* ── MAIN ── */
+.main { padding: 20px; max-width: 1400px; margin: 0 auto; }
 
-  /* ── CARDS mobile ── */
-  .cards-view { display: none; }
-  .card {
-    background: var(--surface); border: 1px solid var(--border);
-    border-radius: 10px; padding: 14px; cursor: pointer;
-    transition: border-color .15s; margin-bottom: 10px; box-shadow: var(--shadow);
-  }
-  .card:hover { border-color: var(--green); }
-  .card.active-card { border-color: var(--green); background: #f0fdf4; }
-  .card-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px; }
-  .card-title { font-weight: 600; font-size: 15px; color: var(--text); }
-  .card-id { font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--text3); }
-  .card-row { display: flex; gap: 16px; flex-wrap: wrap; margin-top: 8px; }
-  .card-kv { display: flex; flex-direction: column; }
-  .card-k { font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: var(--text3); text-transform: uppercase; }
-  .card-v { font-size: 13px; color: var(--text2); }
+.table-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; overflow: hidden; box-shadow: var(--shadow); }
+.table-wrap { overflow-x: auto; }
+table { width: 100%; border-collapse: collapse; font-size: 13px; }
+thead { background: var(--surface2); position: sticky; top: var(--top-offset); z-index: 10; }
+th { padding: 10px 14px; text-align: left; font-family: 'IBM Plex Mono', monospace; font-size: 10px; font-weight: 600; color: var(--text3); text-transform: uppercase; letter-spacing: .6px; white-space: nowrap; border-bottom: 1px solid var(--border); cursor: pointer; user-select: none; }
+th:hover { color: var(--text2); }
+th.sorted { color: var(--green); }
+tbody tr { border-bottom: 1px solid var(--border); cursor: pointer; transition: background .1s; }
+tbody tr:last-child { border-bottom: none; }
+tbody tr:hover { background: #f0fdf4; }
+tbody tr.active-row { background: var(--green-bg); }
+td { padding: 10px 14px; white-space: nowrap; color: var(--text2); }
+td.primary { color: var(--text); font-weight: 600; }
+td.mono { font-family: 'IBM Plex Mono', monospace; font-size: 12px; }
 
-  /* ── OVERLAY & DRAWER ── */
-  .overlay {
-    display: none; position: fixed; inset: 0;
-    background: rgba(15,23,42,.35); z-index: 200; backdrop-filter: blur(2px);
-  }
-  .overlay.open { display: block; }
-  .drawer {
-    position: fixed; top: 0; right: 0;
-    width: min(580px, 100vw); height: 100vh;
-    background: var(--surface); border-left: 1px solid var(--border);
-    z-index: 201; transform: translateX(100%);
-    transition: transform .25s cubic-bezier(.16,1,.3,1);
-    display: flex; flex-direction: column; box-shadow: var(--shadow-lg);
-  }
-  .drawer.open { transform: translateX(0); }
+.tag { display: inline-block; padding: 2px 9px; border-radius: 20px; font-size: 11px; font-weight: 600; font-family: 'IBM Plex Mono', monospace; }
+.tag-soja    { background: #fef9c3; color: #854d0e; }
+.tag-maiz    { background: #dbeafe; color: #1e40af; }
+.tag-trigo   { background: #fef3c7; color: #92400e; }
+.tag-girasol { background: #ffedd5; color: #9a3412; }
+.tag-cebada  { background: #ede9fe; color: #5b21b6; }
+.tag-other   { background: var(--surface2); color: var(--text2); }
+.rinde-num { font-family: 'IBM Plex Mono', monospace; font-size: 12px; font-weight: 600; color: var(--text); }
+.rinde-empty { color: var(--text3); }
 
-  .drawer-header {
-    padding: 18px 20px 16px; border-bottom: 1px solid var(--border);
-    display: flex; align-items: flex-start; justify-content: space-between;
-    gap: 12px; flex-shrink: 0; background: var(--surface);
-  }
-  .drawer-id { font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--text3); margin-bottom: 4px; }
-  .drawer-title { font-size: 20px; font-weight: 600; color: var(--text); line-height: 1.2; }
-  .drawer-sub { font-size: 13px; color: var(--text2); margin-top: 4px; }
-  .btn-close {
-    background: var(--surface2); border: 1px solid var(--border);
-    border-radius: 7px; color: var(--text2); padding: 6px 12px;
-    cursor: pointer; font-size: 15px; flex-shrink: 0; transition: all .15s;
-  }
-  .btn-close:hover { border-color: var(--border2); color: var(--text); }
+/* States */
+.state-box { display: flex; flex-direction: column; align-items: center; justify-content: center; padding: 60px 20px; gap: 12px; color: var(--text3); }
+.spinner { width: 28px; height: 28px; border: 2px solid var(--border); border-top-color: var(--green); border-radius: 50%; animation: spin .7s linear infinite; }
+@keyframes spin { to { transform: rotate(360deg); } }
+.state-box p { font-family: 'IBM Plex Mono', monospace; font-size: 12px; }
+.error-msg { background: #fef2f2; border: 1px solid #fecaca; border-radius: 8px; padding: 16px; color: #991b1b; font-size: 13px; font-family: 'IBM Plex Mono', monospace; white-space: pre-wrap; }
 
-  .drawer-body {
-    overflow-y: auto; flex: 1; padding: 16px 20px 24px;
-    display: flex; flex-direction: column; gap: 10px; background: var(--bg);
-  }
+/* Cards mobile */
+.cards-view { display: none; }
+.card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 14px; cursor: pointer; transition: border-color .15s; margin-bottom: 10px; box-shadow: var(--shadow); }
+.card:hover { border-color: var(--green); }
+.card.active-card { border-color: var(--green); background: #f0fdf4; }
+.card-top { display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 8px; }
+.card-title { font-weight: 600; font-size: 15px; }
+.card-id { font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--text3); }
+.card-row { display: flex; gap: 16px; flex-wrap: wrap; margin-top: 8px; }
+.card-kv { display: flex; flex-direction: column; }
+.card-k { font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: var(--text3); text-transform: uppercase; }
+.card-v { font-size: 13px; color: var(--text2); }
 
-  /* ── DRAWER SECTIONS ── */
-  .dsec {
-    background: var(--surface); border: 1px solid var(--border);
-    border-radius: 10px; overflow: hidden; box-shadow: var(--shadow);
-  }
-  .dsec-header {
-    padding: 11px 16px; display: flex; align-items: center; gap: 8px;
-    cursor: pointer; user-select: none; background: var(--surface);
-    border-bottom: 1px solid var(--border); transition: background .1s;
-  }
-  .dsec-header:hover { background: var(--surface2); }
-  .dsec-header.collapsed { border-bottom: none; }
-  .dsec-icon { font-size: 15px; }
-  .dsec-title {
-    font-family: 'IBM Plex Mono', monospace; font-size: 11px; font-weight: 600;
-    text-transform: uppercase; letter-spacing: .7px; color: var(--text2); flex: 1;
-  }
-  .dsec-count {
-    font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: var(--text3);
-    background: var(--surface2); border: 1px solid var(--border);
-    border-radius: 10px; padding: 1px 7px;
-  }
-  .dsec-arrow { color: var(--text3); font-size: 11px; transition: transform .2s; margin-left: 4px; }
-  .dsec-header.collapsed .dsec-arrow { transform: rotate(-90deg); }
+/* Overlay & Drawer */
+.overlay { display: none; position: fixed; inset: 0; background: rgba(15,23,42,.35); z-index: 200; backdrop-filter: blur(2px); }
+.overlay.open { display: block; }
+.drawer { position: fixed; top: 0; right: 0; width: min(580px, 100vw); height: 100vh; background: var(--surface); border-left: 1px solid var(--border); z-index: 201; transform: translateX(100%); transition: transform .25s cubic-bezier(.16,1,.3,1); display: flex; flex-direction: column; box-shadow: var(--shadow-lg); }
+.drawer.open { transform: translateX(0); }
+.drawer-header { padding: 18px 20px 16px; border-bottom: 1px solid var(--border); display: flex; align-items: flex-start; justify-content: space-between; gap: 12px; flex-shrink: 0; }
+.drawer-id { font-family: 'IBM Plex Mono', monospace; font-size: 11px; color: var(--text3); margin-bottom: 4px; }
+.drawer-title { font-size: 20px; font-weight: 600; line-height: 1.2; }
+.drawer-sub { font-size: 13px; color: var(--text2); margin-top: 4px; }
+.btn-close { background: var(--surface2); border: 1px solid var(--border); border-radius: 7px; color: var(--text2); padding: 6px 12px; cursor: pointer; font-size: 15px; flex-shrink: 0; transition: all .15s; }
+.btn-close:hover { border-color: var(--border2); color: var(--text); }
+.drawer-body { overflow-y: auto; flex: 1; padding: 16px 20px 24px; display: flex; flex-direction: column; gap: 10px; background: var(--bg); }
 
-  .dsec-body {
-    padding: 14px 16px; display: grid;
-    grid-template-columns: 1fr 1fr; gap: 14px 24px;
-  }
-  .dsec-body.collapsed { display: none; }
+/* Drawer sections */
+.dsec { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; overflow: hidden; box-shadow: var(--shadow); }
+.dsec-header { padding: 11px 16px; display: flex; align-items: center; gap: 8px; cursor: pointer; user-select: none; background: var(--surface); border-bottom: 1px solid var(--border); transition: background .1s; }
+.dsec-header:hover { background: var(--surface2); }
+.dsec-header.collapsed { border-bottom: none; }
+.dsec-icon { font-size: 15px; }
+.dsec-title { font-family: 'IBM Plex Mono', monospace; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .7px; color: var(--text2); flex: 1; }
+.dsec-count { font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: var(--text3); background: var(--surface2); border: 1px solid var(--border); border-radius: 10px; padding: 1px 7px; }
+.dsec-arrow { color: var(--text3); font-size: 11px; transition: transform .2s; margin-left: 4px; }
+.dsec-header.collapsed .dsec-arrow { transform: rotate(-90deg); }
+.dsec-body { padding: 14px 16px; display: grid; grid-template-columns: 1fr 1fr; gap: 14px 24px; }
+.dsec-body.collapsed { display: none; }
+.dfield { display: flex; flex-direction: column; gap: 3px; }
+.dfield.full { grid-column: 1 / -1; }
+.dfield-label { font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: var(--text3); text-transform: uppercase; letter-spacing: .5px; }
+.dfield-val { font-size: 13px; color: var(--text); word-break: break-word; line-height: 1.4; }
+.dfield-val.highlight { font-family: 'IBM Plex Mono', monospace; color: var(--green); font-size: 16px; font-weight: 700; }
 
-  .dfield { display: flex; flex-direction: column; gap: 3px; }
-  .dfield.full { grid-column: 1 / -1; }
-  .dfield-label {
-    font-family: 'IBM Plex Mono', monospace; font-size: 10px;
-    color: var(--text3); text-transform: uppercase; letter-spacing: .5px;
-  }
-  .dfield-val { font-size: 13px; color: var(--text); word-break: break-word; line-height: 1.4; }
-  .dfield-val.highlight {
-    font-family: 'IBM Plex Mono', monospace; color: var(--green);
-    font-size: 16px; font-weight: 700;
-  }
-  .dfield-val.mono-val { font-family: 'IBM Plex Mono', monospace; font-size: 12px; }
+/* Fert table */
+.fert-wrap { grid-column: 1 / -1; overflow-x: auto; }
+.fert-tbl { width: 100%; border-collapse: collapse; font-size: 12px; }
+.fert-tbl th { background: var(--surface2); padding: 7px 10px; font-size: 10px; color: var(--text3); text-align: left; border-bottom: 1px solid var(--border); font-family: 'IBM Plex Mono', monospace; font-weight: 600; text-transform: uppercase; letter-spacing: .4px; position: static; top: auto; cursor: default; white-space: nowrap; }
+.fert-tbl td { padding: 8px 10px; border-bottom: 1px solid var(--border); color: var(--text2); white-space: nowrap; }
+.fert-tbl tr:last-child td { border-bottom: none; }
+.fert-tbl .prod-name { color: var(--text); font-weight: 500; }
+.summary-grid { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(auto-fill, minmax(140px,1fr)); gap: 10px; margin-top: 4px; padding-top: 12px; border-top: 1px solid var(--border); }
 
-  /* Fert table */
-  .fert-wrap { grid-column: 1 / -1; overflow-x: auto; }
-  .fert-tbl { width: 100%; border-collapse: collapse; font-size: 12px; border: 1px solid var(--border); border-radius: 8px; overflow: hidden; }
-  .fert-tbl th {
-    background: var(--surface2); padding: 7px 10px; font-size: 10px;
-    color: var(--text3); text-align: left; border-bottom: 1px solid var(--border);
-    font-family: 'IBM Plex Mono', monospace; font-weight: 600; text-transform: uppercase; letter-spacing: .4px;
-    position: static; top: auto; cursor: default;
-  }
-  .fert-tbl td { padding: 8px 10px; border-bottom: 1px solid var(--border); color: var(--text2); white-space: nowrap; }
-  .fert-tbl tr:last-child td { border-bottom: none; }
-  .fert-tbl .prod-name { color: var(--text); font-weight: 500; }
-
-  .summary-grid {
-    grid-column: 1 / -1; display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(130px,1fr));
-    gap: 10px; margin-top: 4px; padding-top: 12px; border-top: 1px solid var(--border);
-  }
-
-  /* ── RESPONSIVE ── */
-  @media (max-width: 768px) {
-    .table-card { display: none; }
-    .cards-view { display: block; }
-    .search-input { width: 140px; }
-    .filters-bar { overflow-x: auto; flex-wrap: nowrap; padding: 10px 12px; }
-    .count-badge { display: none; }
-    .drawer { width: 100vw; }
-    .dsec-body { grid-template-columns: 1fr; }
-    .main { padding: 12px; }
-  }
+/* Responsive */
+@media (max-width: 768px) {
+  .table-card { display: none; }
+  .cards-view { display: block; }
+  .search-input { width: 130px; }
+  .filters-bar { overflow-x: auto; flex-wrap: nowrap; padding: 10px 12px; }
+  .count-badge { display: none; }
+  .drawer { width: 100vw; }
+  .dsec-body { grid-template-columns: 1fr; }
+  .main { padding: 12px; }
+}
 </style>
 </head>
 <body>
 
-<header>
-  <div class="logo">
-    <div class="logo-icon">🌾</div>
-    <div class="logo-text">SOS<span>Agro</span> · Registros de Campo</div>
-  </div>
-  <div class="header-right">
-    <div class="status-pill">
-      <div class="status-dot" id="statusDot"></div>
-      <span id="statusText">Cargando…</span>
+<div id="topBar">
+  <header>
+    <div class="logo">
+      <div class="logo-icon">🌾</div>
+      <div class="logo-text">SOS<span>Agro</span> · Registros de Campo</div>
     </div>
-    <button class="btn-new" onclick="alert('Alta de registros — próximamente')">+ Nuevo</button>
-  </div>
-</header>
+    <div class="header-right">
+      <div class="status-pill">
+        <div class="status-dot" id="statusDot"></div>
+        <span id="statusText">Cargando…</span>
+      </div>
+      <button class="btn-new" onclick="alert('Alta de registros — próximamente')">+ Nuevo</button>
+    </div>
+  </header>
 
-<div class="filters-bar">
-  <div class="filter-group">
-    <span class="filter-label">Buscar</span>
-    <input type="text" class="search-input" id="search" placeholder="Campo, Lote, Genética…" oninput="applyFilters()">
+  <div class="filters-bar">
+    <div class="filter-group">
+      <span class="filter-label">Buscar</span>
+      <input type="text" class="search-input" id="search" placeholder="Campo, Lote, Genética…" oninput="applyFilters()">
+    </div>
+    <!-- Multi-select dropdowns se insertan acá por JS -->
+    <div id="filterDropdowns" style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;"></div>
+    <div class="count-badge" id="countBadge"></div>
   </div>
-  <div class="filter-group">
-    <span class="filter-label">Empresa</span>
-    <select id="fEmpresa" onchange="applyFilters()"><option value="">Todas</option></select>
-  </div>
-  <div class="filter-group">
-    <span class="filter-label">Campaña</span>
-    <select id="fCampana" onchange="applyFilters()"><option value="">Todas</option></select>
-  </div>
-  <div class="filter-group">
-    <span class="filter-label">Cultivo</span>
-    <select id="fCultivo" onchange="applyFilters()"><option value="">Todos</option></select>
-  </div>
-  <div class="count-badge" id="countBadge"></div>
 </div>
 
 <div class="main">
@@ -340,17 +253,18 @@
     <p>Cargando datos desde Google Sheets…</p>
   </div>
   <div class="error-msg" id="errorState" style="display:none"></div>
+
   <div class="table-card" id="tableCard" style="display:none">
     <div class="table-wrap">
       <table>
         <thead>
           <tr>
-            <th onclick="sortBy('ID Registro')">ID</th>
             <th onclick="sortBy('EMPRESA')">Empresa</th>
             <th onclick="sortBy('Campo')">Campo</th>
             <th onclick="sortBy('Lote')">Lote</th>
             <th onclick="sortBy('Campaña')">Campaña</th>
             <th onclick="sortBy('Cultivo')">Cultivo</th>
+            <th onclick="sortBy('Destino')">Destino</th>
             <th onclick="sortBy('Ambiente Regional')">Ambiente</th>
             <th onclick="sortBy('Superficie Sembrada')">Sup. (ha)</th>
             <th onclick="sortBy('Antecesor')">Antecesor</th>
@@ -362,6 +276,7 @@
       </table>
     </div>
   </div>
+
   <div class="cards-view" id="cardsView"></div>
 </div>
 
@@ -382,9 +297,50 @@
 const CSV_URL = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTHHByh3mYfSKCYUj01eUDVH8cvbzkVLpQjxAEiji7ma6wOG0mJ6W9qlIgNPm_dmzbCuT19GQKTgvll/pub?gid=267525563&single=true&output=csv';
 
 let allData = [], filtered = [];
-let sortCol = 'ID Registro', sortAsc = true, activeIdx = null;
+let sortCol = 'EMPRESA', sortAsc = true, activeIdx = null;
 
-window.onload = () => loadData();
+// ── FILTER STATE ─────────────────────────────────────────────────────
+const SEL = { empresa: new Set(), campana: new Set(), cultivo: new Set(), destino: new Set() };
+const FILTER_DEF = [
+  { id: 'empresa', label: 'Empresa',  col: 'EMPRESA'  },
+  { id: 'campana', label: 'Campaña',  col: 'Campaña'  },
+  { id: 'cultivo', label: 'Cultivo',  col: 'Cultivo'  },
+  { id: 'destino', label: 'Destino',  col: 'Destino'  },
+];
+
+// ── COLUMN MAPPING (flexible matching) ───────────────────────────────
+let colMap = {}; // normalized lowercase key → actual CSV key
+
+function buildColMap(row) {
+  colMap = {};
+  Object.keys(row).forEach(k => { colMap[k.trim().toLowerCase()] = k; });
+}
+
+function getF(row, ...names) {
+  for (const n of names) {
+    // exact match
+    if (row[n] !== undefined && hasVal(row[n])) return row[n];
+    // trimmed
+    const trimmed = String(n).trim();
+    if (row[trimmed] !== undefined && hasVal(row[trimmed])) return row[trimmed];
+    // case-insensitive via colMap
+    const mapped = colMap[trimmed.toLowerCase()];
+    if (mapped && hasVal(row[mapped])) return row[mapped];
+  }
+  return null;
+}
+
+// ── LOAD ─────────────────────────────────────────────────────────────
+window.onload = () => {
+  loadData();
+  updateTheadOffset();
+  new ResizeObserver(updateTheadOffset).observe(document.getElementById('topBar'));
+};
+
+function updateTheadOffset() {
+  const h = document.getElementById('topBar').offsetHeight;
+  document.documentElement.style.setProperty('--top-offset', h + 'px');
+}
 
 function loadData() {
   Papa.parse(CSV_URL, {
@@ -392,7 +348,10 @@ function loadData() {
     complete(res) {
       if (!res.data?.length) { showError('No se encontraron datos.'); return; }
       allData = res.data;
-      buildFilters(); applyFilters();
+      buildColMap(allData[0]);
+      console.log('Columnas CSV:', Object.keys(allData[0]));
+      buildFilterDropdowns();
+      applyFilters();
       document.getElementById('loadingState').style.display = 'none';
       document.getElementById('tableCard').style.display = 'block';
       document.getElementById('cardsView').style.display = 'block';
@@ -409,37 +368,152 @@ function showError(msg) {
   setStatus('err', 'Error');
 }
 function setStatus(type, text) {
-  const dot = document.getElementById('statusDot');
   document.getElementById('statusText').textContent = text;
-  dot.className = 'status-dot' + (type==='ok' ? ' ok' : '');
-  if (type==='err') dot.style.background = '#ef4444';
+  const dot = document.getElementById('statusDot');
+  dot.className = 'status-dot' + (type==='ok'?' ok':'');
+  if (type==='err') dot.style.background='#ef4444';
 }
 
-function buildFilters() {
-  const uniq = k => [...new Set(allData.map(r=>r[k]).filter(Boolean))].sort();
-  fillSelect('fEmpresa', uniq('EMPRESA'));
-  fillSelect('fCampana', uniq('Campaña').reverse());
-  fillSelect('fCultivo', uniq('Cultivo'));
-}
-function fillSelect(id, vals) {
-  const sel = document.getElementById(id);
-  const cur = sel.value;
-  while (sel.options.length > 1) sel.remove(1);
-  vals.forEach(v => sel.add(new Option(v,v)));
-  if (cur) sel.value = cur;
+// ── MULTI-SELECT DROPDOWNS ────────────────────────────────────────────
+function buildFilterDropdowns() {
+  const container = document.getElementById('filterDropdowns');
+  container.innerHTML = '';
+  FILTER_DEF.forEach(fd => {
+    const wrap = document.createElement('div');
+    wrap.className = 'ms-wrap filter-group';
+    wrap.innerHTML = `
+      <span class="filter-label">${fd.label}</span>
+      <div class="ms-trigger" id="trigger-${fd.id}" onclick="toggleDropdown('${fd.id}')">
+        <span class="ms-trigger-text" id="triggerText-${fd.id}">Todos</span>
+        <span class="ms-arrow">▾</span>
+      </div>
+      <div class="ms-dropdown" id="dd-${fd.id}"></div>`;
+    container.appendChild(wrap);
+  });
+  refreshAllDropdowns();
+  document.addEventListener('click', e => {
+    if (!e.target.closest('.ms-wrap')) closeAllDropdowns();
+  });
 }
 
+function toggleDropdown(id) {
+  const dd = document.getElementById('dd-' + id);
+  const wasOpen = dd.classList.contains('open');
+  closeAllDropdowns();
+  if (!wasOpen) {
+    dd.classList.add('open');
+    document.getElementById('trigger-' + id).classList.add('active');
+  }
+}
+function closeAllDropdowns() {
+  document.querySelectorAll('.ms-dropdown').forEach(d => d.classList.remove('open'));
+  document.querySelectorAll('.ms-trigger').forEach(t => t.classList.remove('active'));
+}
+
+// Calcula opciones disponibles para cada filtro dada la selección de los anteriores
+function getAvailable(forId) {
+  const idx = FILTER_DEF.findIndex(f => f.id === forId);
+  return allData.filter(r => {
+    for (let i = 0; i < idx; i++) {
+      const fd = FILTER_DEF[i];
+      if (SEL[fd.id].size > 0 && !SEL[fd.id].has(r[fd.col])) return false;
+    }
+    return true;
+  });
+}
+
+function refreshDropdown(fd) {
+  const available = getAvailable(fd.id);
+  const opts = [...new Set(available.map(r => r[fd.col]).filter(Boolean))].sort();
+  const dd = document.getElementById('dd-' + fd.id);
+
+  dd.innerHTML = '';
+
+  // Todos option
+  const allLi = document.createElement('label');
+  allLi.className = 'ms-option all-option';
+  const allCb = document.createElement('input');
+  allCb.type = 'checkbox';
+  allCb.checked = SEL[fd.id].size === 0;
+  allCb.onchange = () => { SEL[fd.id].clear(); onFilterChange(fd.id); };
+  allLi.appendChild(allCb);
+  allLi.appendChild(document.createTextNode(' Todos'));
+  dd.appendChild(allLi);
+
+  if (!opts.length) {
+    const empty = document.createElement('div');
+    empty.className = 'ms-no-options';
+    empty.textContent = 'Sin opciones';
+    dd.appendChild(empty);
+  }
+
+  opts.forEach(val => {
+    const li = document.createElement('label');
+    li.className = 'ms-option';
+    const cb = document.createElement('input');
+    cb.type = 'checkbox';
+    cb.value = val;
+    cb.checked = SEL[fd.id].has(val);
+    cb.onchange = () => {
+      if (cb.checked) SEL[fd.id].add(val); else SEL[fd.id].delete(val);
+      onFilterChange(fd.id);
+    };
+    li.appendChild(cb);
+    li.appendChild(document.createTextNode(' ' + val));
+    dd.appendChild(li);
+  });
+
+  // Update trigger text
+  const trigger = document.getElementById('trigger-' + fd.id);
+  const trigText = document.getElementById('triggerText-' + fd.id);
+  const size = SEL[fd.id].size;
+  if (size === 0) {
+    trigText.textContent = 'Todos';
+    trigger.classList.remove('has-selection');
+  } else if (size === 1) {
+    trigText.textContent = [...SEL[fd.id]][0];
+    trigger.classList.add('has-selection');
+  } else {
+    trigText.textContent = size + ' selec.';
+    trigger.classList.add('has-selection');
+  }
+}
+
+function refreshAllDropdowns() {
+  FILTER_DEF.forEach(fd => refreshDropdown(fd));
+}
+
+function onFilterChange(changedId) {
+  // Para filtros que vienen DESPUÉS del que cambió, resetear selección si ya no están disponibles
+  const idx = FILTER_DEF.findIndex(f => f.id === changedId);
+  for (let i = idx + 1; i < FILTER_DEF.length; i++) {
+    const fd = FILTER_DEF[i];
+    const available = getAvailable(fd.id);
+    const availVals = new Set(available.map(r => r[fd.col]).filter(Boolean));
+    // Quitar valores seleccionados que ya no están disponibles
+    for (const v of [...SEL[fd.id]]) {
+      if (!availVals.has(v)) SEL[fd.id].delete(v);
+    }
+    refreshDropdown(fd);
+  }
+  refreshDropdown(FILTER_DEF[idx]); // update trigger text
+  applyFilters();
+}
+
+function refreshAllDropdowns() {
+  FILTER_DEF.forEach(fd => refreshDropdown(fd));
+}
+
+// ── APPLY FILTERS ─────────────────────────────────────────────────────
 function applyFilters() {
-  const search  = document.getElementById('search').value.toLowerCase();
-  const empresa = document.getElementById('fEmpresa').value;
-  const campana = document.getElementById('fCampana').value;
-  const cultivo = document.getElementById('fCultivo').value;
+  const search = document.getElementById('search').value.toLowerCase();
   filtered = allData.filter(r => {
-    if (empresa && r['EMPRESA'] !== empresa) return false;
-    if (campana && r['Campaña'] !== campana) return false;
-    if (cultivo && r['Cultivo'] !== cultivo) return false;
+    for (const fd of FILTER_DEF) {
+      if (SEL[fd.id].size > 0 && !SEL[fd.id].has(r[fd.col])) return false;
+    }
     if (search) {
-      const hay = [r['Campo'],r['Lote'],r['Genética'],r['Ambiente Regional'],r['EMPRESA']].join(' ').toLowerCase();
+      const hay = [r['Campo'],r['Lote'],r['Genética'],r['Ambiente Regional'],r['EMPRESA'],r['Responsable Registro']]
+        .join(' ').toLowerCase();
       if (!hay.includes(search)) return false;
     }
     return true;
@@ -449,19 +523,21 @@ function applyFilters() {
     `<strong>${filtered.length}</strong> / ${allData.length} registros`;
 }
 
+// ── SORT ──────────────────────────────────────────────────────────────
 function sortBy(col) {
-  sortAsc = sortCol===col ? !sortAsc : true; sortCol = col;
+  sortAsc = sortCol===col ? !sortAsc : true; sortCol=col;
   sortData(); renderTable();
 }
 function sortData() {
   filtered.sort((a,b) => {
     let va=a[sortCol]||'', vb=b[sortCol]||'';
     const na=parseFloat(String(va).replace(',','.')), nb=parseFloat(String(vb).replace(',','.'));
-    if (!isNaN(na)&&!isNaN(nb)) return sortAsc ? na-nb : nb-na;
-    return sortAsc ? va.localeCompare(vb,'es') : vb.localeCompare(va,'es');
+    if (!isNaN(na)&&!isNaN(nb)) return sortAsc?na-nb:nb-na;
+    return sortAsc?va.localeCompare(vb,'es'):vb.localeCompare(va,'es');
   });
 }
 
+// ── RENDER TABLE ──────────────────────────────────────────────────────
 function renderTable() {
   const tbody = document.getElementById('tableBody');
   tbody.innerHTML = '';
@@ -476,13 +552,13 @@ function renderTable() {
     tr.onclick = () => openDrawer(row, idx);
     const rinde = row['Rendimiento (kg/ha sembrada)'];
     tr.innerHTML = `
-      <td class="mono">${row['ID Registro']||'—'}</td>
       <td class="primary">${row['EMPRESA']||'—'}</td>
       <td>${row['Campo']||'—'}</td>
       <td class="mono">${row['Lote']||'—'}</td>
       <td class="mono">${row['Campaña']||'—'}</td>
       <td>${cultivoTag(row['Cultivo'])}</td>
-      <td style="max-width:160px;overflow:hidden;text-overflow:ellipsis">${row['Ambiente Regional']||'—'}</td>
+      <td>${row['Destino']||'—'}</td>
+      <td style="max-width:150px;overflow:hidden;text-overflow:ellipsis">${row['Ambiente Regional']||'—'}</td>
       <td class="mono">${fmt(row['Superficie Sembrada'])||'—'}</td>
       <td>${row['Antecesor']||'—'}</td>
       <td class="mono">${row['Fecha de Siembra']||'—'}</td>
@@ -491,178 +567,156 @@ function renderTable() {
   });
 }
 
+// ── RENDER CARDS ──────────────────────────────────────────────────────
 function renderCards() {
   const cv = document.getElementById('cardsView');
   cv.innerHTML = '';
   filtered.forEach(row => {
     const idx = allData.indexOf(row);
     const div = document.createElement('div');
-    div.className = 'card' + (idx===activeIdx ? ' active-card' : '');
+    div.className = 'card'+(idx===activeIdx?' active-card':'');
     div.onclick = () => openDrawer(row, idx);
     const rinde = row['Rendimiento (kg/ha sembrada)'];
     div.innerHTML = `
       <div class="card-top">
         <div class="card-title">${row['Campo']||'—'} · ${row['Lote']||''}</div>
-        <div class="card-id">#${row['ID Registro']||'?'}</div>
+        <div class="card-id">${row['EMPRESA']||''}</div>
       </div>
       ${cultivoTag(row['Cultivo'])}
       <div class="card-row">
-        <div class="card-kv"><span class="card-k">Empresa</span><span class="card-v">${row['EMPRESA']||'—'}</span></div>
         <div class="card-kv"><span class="card-k">Campaña</span><span class="card-v">${row['Campaña']||'—'}</span></div>
+        <div class="card-kv"><span class="card-k">Destino</span><span class="card-v">${row['Destino']||'—'}</span></div>
         <div class="card-kv"><span class="card-k">Sup.</span><span class="card-v">${fmt(row['Superficie Sembrada'])||'—'} ha</span></div>
-        <div class="card-kv"><span class="card-k">Rinde</span><span class="card-v">${rinde ? fmt(rinde)+' kg/ha' : '—'}</span></div>
+        <div class="card-kv"><span class="card-k">Rinde</span><span class="card-v">${rinde?fmt(rinde)+' kg/ha':'—'}</span></div>
       </div>`;
     cv.appendChild(div);
   });
 }
 
-// ── DRAWER ───────────────────────────────────────────────────────────
+// ── DRAWER ────────────────────────────────────────────────────────────
 function openDrawer(row, idx) {
   activeIdx = idx;
   renderTable(); renderCards();
-  document.getElementById('dId').textContent    = `Registro #${row['ID Registro']||'?'} · ${row['Campaña']||''}`;
-  document.getElementById('dTitle').textContent  = `${row['Campo']||'—'} — ${row['Lote']||''}`;
-  document.getElementById('dSub').textContent    = `${row['EMPRESA']||''} · ${row['Cultivo']||''}${row['Antecesor'] ? ' / Ant: '+row['Antecesor'] : ''}`;
+  document.getElementById('dId').textContent   = `Registro #${row['ID Registro']||'?'} · ${row['Campaña']||''}`;
+  document.getElementById('dTitle').textContent = `${row['Campo']||'—'} — ${row['Lote']||''}`;
+  document.getElementById('dSub').textContent   = `${row['EMPRESA']||''} · ${row['Cultivo']||''}${row['Antecesor']?' / Ant: '+row['Antecesor']:''}`;
 
   const body = document.getElementById('drawerBody');
   body.innerHTML = '';
 
-  // Definición completa de secciones
+  // Definición de secciones con posibles nombres alternativos de columna
   const SECTIONS = [
     { icon:'🏢', title:'Identificación', fields:[
-      ['Empresa','EMPRESA'],['Cliente SOS','Cliente SOS'],['Campo','Campo'],
-      ['Lote','Lote'],['Campaña','Campaña'],['Grupo CREA','Grupo CREA'],
-      ['Coordinador','Coordinador'],['Responsable','Responsable Registro'],
-      ['ADM','ADM'],['Tenencia','Tenencia'],['Coordenadas','Coordenadas',true],
+      ['Empresa',          ['EMPRESA','Empresa']],
+      ['Cliente SOS',      ['Cliente SOS','ClienteSOS']],
+      ['Campo',            ['Campo']],
+      ['Lote',             ['Lote']],
+      ['Campaña',          ['Campaña','Campana']],
+      ['Grupo CREA',       ['Grupo CREA','GrupoCREA']],
+      ['Coordinador',      ['Coordinador']],
+      ['Responsable',      ['Responsable Registro','ResponsableRegistro','Responsable']],
+      ['ADM',              ['ADM']],
+      ['Tenencia',         ['Tenencia']],
+      ['Coordenadas',      ['Coordenadas'], true],
     ]},
     { icon:'🗺️', title:'Ambiente y Suelo', fields:[
-      ['Ambiente Regional','Ambiente Regional'],['RIDZO','RIDZO'],
-      ['Sup. Sembrada (ha)','Superficie Sembrada'],['Arena (%)','Arena'],
-      ['pH','pH'],['M.O. (%)','M.O.'],['P Bray (ppm)','P'],
-      ['Año análisis P','Año análisis P'],['SO4 / Zn','SO4_Zn'],
-      ['Prof. Napa (m)','Profundidad de Napa'],
+      ['Ambiente Regional',['Ambiente Regional','AmbienteRegional']],
+      ['RIDZO',            ['RIDZO']],
+      ['Sup. Sembrada (ha)',['Superficie Sembrada','SuperficieSembrada']],
+      ['Arena (%)',         ['Arena']],
+      ['pH',               ['pH','PH','ph']],
+      ['M.O. (%)',          ['M.O.','MO','Materia Organica','M.O']],
+      ['P Bray (ppm)',      ['P','P Bray']],
+      ['Año análisis P',    ['Año análisis P','Año analisis P','AnioAnalisisP']],
+      ['SO4 / Zn',          ['SO4_Zn','SO4/Zn','SO4']],
+      ['Prof. Napa (m)',    ['Profundidad de Napa','ProfundidadNapa']],
     ]},
     { icon:'🌱', title:'Siembra', fields:[
-      ['Cultivo','Cultivo'],['Sub-grupo','Sub Grupo de Cultivo'],
-      ['Destino','Destino'],['Antecesor','Antecesor'],
-      ['Rinde esperado (kg/ha)','Rinde Esperado (kg/ha)'],
-      ['Orden siembra','Orden de Siembra'],['Fecha siembra','Fecha de Siembra'],
-      ['Espaciamiento (cm)','Espaciamiento (cm)'],['Semillero','Semillero'],
-      ['Genética','Genética'],['Calibre','Calibre'],
-      ['Plantas obj. (pl/m²)','Plantas objetivo (Plantas/m2)'],
-      ['Poder germinativo','Poder germinativo'],
-      ['Peso 1000 sem. (g)','Peso 1000 semillas'],
-      ['Coef. logro estim.','Coef de logro estimado'],
-      ['Densidad calc. (kg/ha)','Densidad Siembra Calculada'],
-      ['Densidad recom. (kg/ha)','Densidad siembra Recomendada'],
-      ['Pob. lograda (pl/m²)','Poblacion Lograda (Plantas/m2)'],
-      ['Coef. logro real','Coeficiente de logro real'],
+      ['Cultivo',           ['Cultivo']],
+      ['Sub-grupo',         ['Sub Grupo de Cultivo','SubGrupoCultivo']],
+      ['Destino',           ['Destino']],
+      ['Antecesor',         ['Antecesor']],
+      ['Rinde esperado (kg/ha)',['Rinde Esperado (kg/ha)','RindeEsperado']],
+      ['Orden siembra',     ['Orden de Siembra','OrdenSiembra']],
+      ['Fecha siembra',     ['Fecha de Siembra','FechaSiembra']],
+      ['Espaciamiento (cm)',['Espaciamiento (cm)','Espaciamiento']],
+      ['Semillero',         ['Semillero']],
+      ['Genética',          ['Genética','Genetica']],
+      ['Calibre',           ['Calibre']],
+      ['Plantas obj. (pl/m²)',['Plantas objetivo (Plantas/m2)','PlantasObjetivo']],
+      ['Poder germinativo', ['Poder germinativo','PoderGerminativo']],
+      ['Peso 1000 sem. (g)',['Peso 1000 semillas','Peso1000Semillas']],
+      ['Coef. logro estim.',['Coef de logro estimado','CoefLogroEstimado']],
+      ['Densidad calc. (kg/ha)',['Densidad Siembra Calculada','DensidadCalculada']],
+      ['Densidad recom. (kg/ha)',['Densidad siembra Recomendada','DensidadRecomendada']],
+      ['Pob. lograda (pl/m²)',['Poblacion Lograda (Plantas/m2)','PoblacionLograda']],
+      ['Coef. logro real',  ['Coeficiente de logro real','CoefLogroReal']],
     ]},
     { icon:'🧪', title:'Análisis de Nitrógeno', fields:[
-      ['Info análisis N','INFO ANÁLISIS N',true],
-      ['NO₃ 0–20 cm','NO3_ (0-20)'],['NO₃ 20–40 cm','NO3_ (20-40)'],
-      ['NO₃ 40–60 cm','NO3_ (40-60)'],
-      ['N suelo 0–60 cm (kg/ha)','Nitrogeno suelo (0-60 cm)'],
-      ['N objetivo (kg/ha)','Nitrogeno Objetivo'],
+      ['Info análisis N',   ['INFO ANÁLISIS N','INFO ANALISIS N','InfoAnalisisN'], true],
+      ['NO₃ 0–20 cm',      ['NO3_ (0-20)','NO3 (0-20)','NO3_(0-20)']],
+      ['NO₃ 20–40 cm',     ['NO3_ (20-40)','NO3 (20-40)','NO3_(20-40)']],
+      ['NO₃ 40–60 cm',     ['NO3_ (40-60)','NO3 (40-60)','NO3_(40-60)']],
+      ['N suelo 0–60 cm',  ['Nitrogeno suelo (0-60 cm)','NitrogenoSuelo']],
+      ['N objetivo (kg/ha)',['Nitrogeno Objetivo','NitrogenoObjetivo']],
     ]},
     { icon:'💊', title:'Fertilización', type:'fert' },
     { icon:'🦟', title:'Adversidades', fields:[
-      ['Adversidad I','Adversidad I'],['Daño I','Daño I'],
-      ['Adversidad II','Adversidad II'],['Daño II','Daño II'],
+      ['Adversidad I',  ['Adversidad I','AdversidadI']],
+      ['Daño I',        ['Daño I','DanoI']],
+      ['Adversidad II', ['Adversidad II','AdversidadII']],
+      ['Daño II',       ['Daño II','DanoII']],
     ]},
     { icon:'🌾', title:'Cosecha', fields:[
-      ['Nivel información','Nivel de Información'],
-      ['Fecha cosecha','Fecha Cosecha'],
-      ['Sup. cosechada (ha)','Superficie Cosechada'],
-      ['Rinde grano seco (kg/ha cosech.)','Rendimiento Grano Seco (kg/ha cosechada)'],
-      ['Rinde (kg/ha sembrada)','Rendimiento (kg/ha sembrada)',false,true],
-      ['Kg totales','Kg Totales'],['Humedad cosecha (%)','Humedad de cosecha'],
-      ['Peso 1000 granos (g)','Peso de 1000 granos'],
-      ['Peso Hectolítrico','Peso Hectolítrico'],
-      ['Proteína (%)','Proteína'],['Materia Grasa (%)','Materia Grasa'],
+      ['Nivel información',  ['Nivel de Información','NivelInformacion']],
+      ['Fecha cosecha',      ['Fecha Cosecha','FechaCosecha']],
+      ['Sup. cosechada (ha)',['Superficie Cosechada','SuperficieCosechada']],
+      ['Rinde grano seco',   ['Rendimiento Grano Seco (kg/ha cosechada)','RendimientoGranoSeco']],
+      ['Rinde (kg/ha semb.)',['Rendimiento (kg/ha sembrada)','RendimientoSembrada'], false, true],
+      ['Kg totales',         ['Kg Totales','KgTotales']],
+      ['Humedad cosecha (%)',['Humedad de cosecha','HumedadCosecha']],
+      ['Peso 1000 granos',   ['Peso de 1000 granos','Peso1000Granos']],
+      ['Peso Hectolítrico',  ['Peso Hectolítrico','PesoHectolitrico']],
+      ['Proteína (%)',       ['Proteína','Proteina']],
+      ['Materia Grasa (%)',  ['Materia Grasa','MateriaGrasa']],
     ]},
     { icon:'📦', title:'Totales por Lote', fields:[
-      ['N° Bolsas necesarias','NRO BOLSAS NECESARIAS Mz/Gi'],
-      ['kg Semilla total','kg Semilla total'],
-      ['kg Fert. P','KG FERT P NECESARIOS'],
-      ['kg Fert. 2','KG FERT 2 NECESARIOS'],
-      ['kg Fert. 3','KG FERT 3 NECESARIOS'],
-      ['kg Fert. 4','KG FERT 4 NECESARIOS'],
-      ['Balance P','Balance P'],
+      ['N° Bolsas necesarias',['NRO BOLSAS NECESARIAS Mz/Gi','NroBolsas']],
+      ['kg Semilla total',    ['kg Semilla total','kgSemillaTotal']],
+      ['kg Fert. P',          ['KG FERT P NECESARIOS','KgFertP']],
+      ['kg Fert. 2',          ['KG FERT 2 NECESARIOS','KgFert2']],
+      ['kg Fert. 3',          ['KG FERT 3 NECESARIOS','KgFert3']],
+      ['kg Fert. 4',          ['KG FERT 4 NECESARIOS','KgFert4']],
+      ['Balance P',           ['Balance P','BalanceP']],
     ]},
     { icon:'📝', title:'Observaciones', fields:[
-      ['Observaciones','Observaciones',true],
-      ['Ambiente','Ambiente',true],
-      ['Lote-Cult-Ant','Lote-Cult-Ant',true],
+      ['Observaciones', ['Observaciones'], true],
+      ['Ambiente',      ['Ambiente'], true],
+      ['Lote-Cult-Ant', ['Lote-Cult-Ant','LoteCultAnt'], true],
     ]},
   ];
 
   SECTIONS.forEach(sec => {
-    // ── Fertilización ──
     if (sec.type === 'fert') {
-      const prods = [
-        { label:'P1 (P)', nom: row['Fertilizante P Producto 1'],  pN: row['% N Producto 1'],  pP: row['% P2O5 Producto 1'],  pS: row['% S Producto 1'],  pZn: row['% Zn Producto 1'],  dosis: row['Dosis Fert. P Producto 1'], momento: row['Momento 1'], forma: row['Forma 1'] },
-        { label:'P2 (N)', nom: row['Fertilizante N Producto 2'],  pN: row['% N Producto 2'],  pP: row['% P2O5 Producto 2'],  pS: row['% S Producto 2'],  pZn: row['% Zn Producto 2'],  dosis: row['Dosis 2'],              momento: row['Momento 2'], forma: row['Forma 2'] },
-        { label:'P3',     nom: row['Producto 3'],                 pN: row['% N Producto 3'],  pP: row['% P2O5 Producto 3'],  pS: row['% S Producto 3'],  pZn: row['% Zn Producto 3'],  dosis: row['Dosis 3'],              momento: row['Momento 3'], forma: row['Forma 3'] },
-        { label:'P4',     nom: row['Producto 4'],                 pN: row['% N Producto 4'],  pP: row['% P2O5 Producto 4'],  pS: row['% S Producto 4'],  pZn: row['% Zn Producto 4'],  dosis: row['Dosis 4'],              momento: row['Momento 4'], forma: row['Forma 4'] },
-      ].filter(p => hasVal(p.nom) || hasVal(p.dosis));
-
-      const sumFields = [
-        ['kg N Fertilizante','kg N Fertilizante'],['N alcanzado real','N alcanzado real'],
-        ['kg P Fertilizante','kg P Fertilizante'],['P (Bray) Alcanzado','P (Bray) Alcanzado'],
-        ['Balance P','Balance P'],
-      ].filter(([,k]) => hasVal(row[k]));
-
-      if (!prods.length && !sumFields.length) return;
-
-      const secEl = makeSection(sec);
-      const bdy = secEl.querySelector('.dsec-body');
-
-      if (prods.length) {
-        const wrap = document.createElement('div');
-        wrap.className = 'fert-wrap';
-        wrap.innerHTML = `<table class="fert-tbl">
-          <thead><tr><th></th><th>Producto</th><th>N%</th><th>P%</th><th>S%</th><th>Zn%</th><th>Dosis</th><th>Momento</th><th>Forma</th></tr></thead>
-          <tbody>${prods.map(p=>`<tr>
-            <td style="color:var(--text3);font-size:10px;font-family:'IBM Plex Mono',monospace">${p.label}</td>
-            <td class="prod-name">${p.nom||'—'}</td>
-            <td>${p.pN||'—'}</td><td>${p.pP||'—'}</td><td>${p.pS||'—'}</td><td>${p.pZn||'—'}</td>
-            <td style="font-weight:600">${p.dosis||'—'}</td>
-            <td>${p.momento||'—'}</td><td>${p.forma||'—'}</td>
-          </tr>`).join('')}</tbody>
-        </table>`;
-        bdy.appendChild(wrap);
-      }
-
-      if (sumFields.length) {
-        const sg = document.createElement('div');
-        sg.className = 'summary-grid';
-        sumFields.forEach(([label,key]) => {
-          sg.innerHTML += `<div class="dfield"><span class="dfield-label">${label}</span><span class="dfield-val mono-val">${row[key]}</span></div>`;
-        });
-        bdy.appendChild(sg);
-      }
-      setCount(secEl, prods.length + sumFields.length);
-      body.appendChild(secEl);
-      return;
+      renderFert(row, body); return;
     }
+    const visible = sec.fields
+      .map(([label, keys, full, highlight]) => {
+        const val = getF(row, ...keys);
+        return val ? { label, val, full, highlight } : null;
+      })
+      .filter(Boolean);
 
-    // ── Secciones normales: solo campos con valor ──
-    const visible = sec.fields.filter(([,k]) => hasVal(row[k]));
     if (!visible.length) return;
 
-    const secEl = makeSection(sec);
+    const secEl = makeSection(sec.icon, sec.title, visible.length);
     const bdy = secEl.querySelector('.dsec-body');
-
-    visible.forEach(([label, key, full, highlight]) => {
+    visible.forEach(({ label, val, full, highlight }) => {
       const f = document.createElement('div');
       f.className = 'dfield' + (full ? ' full' : '');
-      const cls = highlight ? 'highlight' : '';
-      f.innerHTML = `<span class="dfield-label">${label}</span><span class="dfield-val ${cls}">${row[key]}</span>`;
+      f.innerHTML = `<span class="dfield-label">${label}</span><span class="dfield-val ${highlight?'highlight':''}">${val}</span>`;
       bdy.appendChild(f);
     });
-
-    setCount(secEl, visible.length);
     body.appendChild(secEl);
   });
 
@@ -671,14 +725,63 @@ function openDrawer(row, idx) {
   document.body.style.overflow = 'hidden';
 }
 
-function makeSection(sec) {
+function renderFert(row, body) {
+  const prodDefs = [
+    { label:'P1', nom: getF(row,'Fertilizante P Producto 1'), pN: getF(row,'% N Producto 1'), pP: getF(row,'% P2O5 Producto 1'), pS: getF(row,'% S Producto 1'), pZn: getF(row,'% Zn Producto 1'), dosis: getF(row,'Dosis Fert. P Producto 1','Dosis 1'), momento: getF(row,'Momento 1'), forma: getF(row,'Forma 1') },
+    { label:'P2', nom: getF(row,'Fertilizante N Producto 2'), pN: getF(row,'% N Producto 2'), pP: getF(row,'% P2O5 Producto 2'), pS: getF(row,'% S Producto 2'), pZn: getF(row,'% Zn Producto 2'), dosis: getF(row,'Dosis 2','Dosis de fertilizante recom_ (kilos/ha)'), momento: getF(row,'Momento 2'), forma: getF(row,'Forma 2') },
+    { label:'P3', nom: getF(row,'Producto 3'), pN: getF(row,'% N Producto 3'), pP: getF(row,'% P2O5 Producto 3'), pS: getF(row,'% S Producto 3'), pZn: getF(row,'% Zn Producto 3'), dosis: getF(row,'Dosis 3'), momento: getF(row,'Momento 3'), forma: getF(row,'Forma 3') },
+    { label:'P4', nom: getF(row,'Producto 4'), pN: getF(row,'% N Producto 4'), pP: getF(row,'% P2O5 Producto 4'), pS: getF(row,'% S Producto 4'), pZn: getF(row,'% Zn Producto 4'), dosis: getF(row,'Dosis 4'), momento: getF(row,'Momento 4'), forma: getF(row,'Forma 4') },
+  ].filter(p => p.nom || p.dosis);
+
+  const sumFields = [
+    ['kg N Fertilizante',  getF(row,'kg N Fertilizante','kgNFertilizante')],
+    ['N alcanzado real',   getF(row,'N alcanzado real','NAlcanzadoReal')],
+    ['kg P Fertilizante',  getF(row,'kg P Fertilizante','kgPFertilizante')],
+    ['P (Bray) Alcanzado', getF(row,'P (Bray) Alcanzado','PBrayAlcanzado')],
+    ['Balance P',          getF(row,'Balance P','BalanceP')],
+  ].filter(([,v]) => v);
+
+  if (!prodDefs.length && !sumFields.length) return;
+
+  const secEl = makeSection('💊', 'Fertilización', prodDefs.length + sumFields.length);
+  const bdy = secEl.querySelector('.dsec-body');
+
+  if (prodDefs.length) {
+    const wrap = document.createElement('div');
+    wrap.className = 'fert-wrap';
+    wrap.innerHTML = `<table class="fert-tbl">
+      <thead><tr><th></th><th>Producto</th><th>N%</th><th>P%</th><th>S%</th><th>Zn%</th><th>Dosis</th><th>Momento</th><th>Forma</th></tr></thead>
+      <tbody>${prodDefs.map(p=>`<tr>
+        <td style="color:var(--text3);font-size:10px;font-family:'IBM Plex Mono',monospace">${p.label}</td>
+        <td class="prod-name">${p.nom||'—'}</td>
+        <td>${p.pN||'—'}</td><td>${p.pP||'—'}</td><td>${p.pS||'—'}</td><td>${p.pZn||'—'}</td>
+        <td style="font-weight:600">${p.dosis||'—'}</td>
+        <td>${p.momento||'—'}</td><td>${p.forma||'—'}</td>
+      </tr>`).join('')}</tbody>
+    </table>`;
+    bdy.appendChild(wrap);
+  }
+
+  if (sumFields.length) {
+    const sg = document.createElement('div');
+    sg.className = 'summary-grid';
+    sumFields.forEach(([label,val]) => {
+      sg.innerHTML += `<div class="dfield"><span class="dfield-label">${label}</span><span class="dfield-val">${val}</span></div>`;
+    });
+    bdy.appendChild(sg);
+  }
+
+  body.appendChild(secEl);
+}
+
+function makeSection(icon, title, count) {
   const el = document.createElement('div');
   el.className = 'dsec';
   el.innerHTML = `
     <div class="dsec-header">
-      <span class="dsec-icon">${sec.icon}</span>
-      <span class="dsec-title">${sec.title}</span>
-      <span class="dsec-count"></span>
+      <span class="dsec-icon">${icon}</span>
+      <span class="dsec-title">${title}</span>
+      <span class="dsec-count">${count} campo${count!==1?'s':''}</span>
       <span class="dsec-arrow">▾</span>
     </div>
     <div class="dsec-body"></div>`;
@@ -686,9 +789,6 @@ function makeSection(sec) {
   const bdy = el.querySelector('.dsec-body');
   hdr.onclick = () => { hdr.classList.toggle('collapsed'); bdy.classList.toggle('collapsed'); };
   return el;
-}
-function setCount(el, n) {
-  el.querySelector('.dsec-count').textContent = n + ' campos';
 }
 
 function closeDrawer() {
@@ -698,7 +798,7 @@ function closeDrawer() {
   activeIdx = null; renderTable(); renderCards();
 }
 
-// ── HELPERS ──────────────────────────────────────────────────────────
+// ── HELPERS ───────────────────────────────────────────────────────────
 function hasVal(v) { return v !== undefined && v !== null && String(v).trim() !== ''; }
 
 function cultivoTag(c) {
@@ -718,7 +818,7 @@ function fmt(val) {
   return isNaN(n) ? val : n.toLocaleString('es-AR');
 }
 
-document.addEventListener('keydown', e => { if (e.key==='Escape') closeDrawer(); });
+document.addEventListener('keydown', e => { if(e.key==='Escape') closeDrawer(); });
 </script>
 </body>
 </html>
