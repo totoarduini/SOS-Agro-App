@@ -5,6 +5,7 @@
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>Registros de Campo — SOS Agro</title>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/PapaParse/5.4.1/papaparse.min.js"></script>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.0/chart.umd.min.js"></script>
 <style>
 @import url('https://fonts.googleapis.com/css2?family=IBM+Plex+Mono:wght@400;500;600&family=IBM+Plex+Sans:wght@300;400;500;600&display=swap');
 
@@ -210,7 +211,37 @@ td.mono { font-family: 'IBM Plex Mono', monospace; font-size: 12px; }
 .fert-tbl .prod-name { color: var(--text); font-weight: 500; }
 .summary-grid { grid-column: 1 / -1; display: grid; grid-template-columns: repeat(auto-fill, minmax(140px,1fr)); gap: 10px; margin-top: 4px; padding-top: 12px; border-top: 1px solid var(--border); }
 
-/* Responsive */
+/* ── TABS ── */
+.tab-nav { display: flex; gap: 2px; background: var(--surface2); border-radius: 8px; padding: 3px; }
+.tab-btn { background: none; border: none; border-radius: 6px; padding: 5px 16px; font-family: 'IBM Plex Sans', sans-serif; font-size: 13px; font-weight: 500; color: var(--text3); cursor: pointer; transition: all .15s; white-space: nowrap; }
+.tab-btn.active { background: var(--surface); color: var(--text); font-weight: 600; box-shadow: 0 1px 3px rgba(0,0,0,.1); }
+.tab-btn:hover:not(.active) { color: var(--text2); }
+
+/* ── SUPERFICIES ── */
+.sup-layout { display: grid; grid-template-columns: 1fr 320px; gap: 20px; align-items: start; }
+.sup-filters { display: flex; gap: 10px; flex-wrap: wrap; align-items: center; margin-bottom: 16px; padding: 12px 16px; background: var(--surface); border: 1px solid var(--border); border-radius: 10px; box-shadow: var(--shadow); }
+.sup-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; box-shadow: var(--shadow); overflow: hidden; }
+.sup-card-title { padding: 12px 16px; border-bottom: 1px solid var(--border); font-family: 'IBM Plex Mono', monospace; font-size: 11px; font-weight: 600; text-transform: uppercase; letter-spacing: .7px; color: var(--text2); display: flex; align-items: center; gap: 8px; }
+.sup-card-title span { font-size: 15px; }
+.pivot-wrap { overflow-x: auto; }
+.pivot-tbl { width: 100%; border-collapse: collapse; font-size: 13px; }
+.pivot-tbl th { background: var(--surface2); padding: 9px 14px; text-align: left; font-family: 'IBM Plex Mono', monospace; font-size: 10px; font-weight: 600; color: var(--text3); text-transform: uppercase; letter-spacing: .5px; border-bottom: 1px solid var(--border); white-space: nowrap; }
+.pivot-tbl th.num { text-align: right; }
+.pivot-tbl td { padding: 9px 14px; border-bottom: 1px solid var(--border); color: var(--text2); font-size: 13px; }
+.pivot-tbl td.num { text-align: right; font-family: 'IBM Plex Mono', monospace; font-size: 12px; color: var(--text); }
+.pivot-tbl td.zero { color: var(--text3); }
+.pivot-tbl td.cultivo-name { font-weight: 600; color: var(--text); white-space: nowrap; }
+.pivot-tbl tr.total-row td { background: var(--surface2); font-weight: 700; border-top: 2px solid var(--border2); color: var(--text); }
+.pivot-tbl tr.total-row td.num { color: var(--green); }
+.pivot-tbl tr:last-child td { border-bottom: none; }
+.pivot-tbl td.grand-total { color: var(--green); font-weight: 700; }
+.chart-wrap { padding: 16px; }
+.sup-stat { display: flex; flex-direction: column; gap: 2px; padding: 10px 16px; border-bottom: 1px solid var(--border); }
+.sup-stat-label { font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: var(--text3); text-transform: uppercase; }
+.sup-stat-val { font-size: 22px; font-weight: 700; color: var(--text); font-family: 'IBM Plex Mono', monospace; }
+.sup-stat-val small { font-size: 13px; font-weight: 400; color: var(--text2); }
+@media (max-width: 900px) { .sup-layout { grid-template-columns: 1fr; } }
+
 @media (max-width: 768px) {
   .table-card { display: none; }
   .cards-view { display: block; }
@@ -234,6 +265,10 @@ td.mono { font-family: 'IBM Plex Mono', monospace; font-size: 12px; }
       <div class="logo-icon">🌾</div>
       <div class="logo-text">SOS<span>Agro</span> · Registros de Campo</div>
     </div>
+    <div class="tab-nav">
+      <button class="tab-btn active" id="tabBtnRegistros" onclick="switchTab('registros')">📋 Registros</button>
+      <button class="tab-btn" id="tabBtnSuperficies" onclick="switchTab('superficies')">📐 Superficies</button>
+    </div>
     <div class="header-right">
       <div class="status-pill">
         <div class="status-dot" id="statusDot"></div>
@@ -243,48 +278,86 @@ td.mono { font-family: 'IBM Plex Mono', monospace; font-size: 12px; }
     </div>
   </header>
 
-  <div class="filters-bar">
+  <div class="filters-bar" id="filtersRegistros">
     <div class="filter-group">
       <span class="filter-label">Buscar</span>
       <input type="text" class="search-input" id="search" placeholder="Campo, Lote, Genética…" oninput="applyFilters()">
     </div>
-    <!-- Multi-select dropdowns se insertan acá por JS -->
     <div id="filterDropdowns" style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;"></div>
     <div class="count-badge" id="countBadge"></div>
+  </div>
+
+  <div class="filters-bar" id="filtersSuperficies" style="display:none">
+    <div id="supFilterDropdowns" style="display:flex;gap:10px;flex-wrap:wrap;align-items:center;"></div>
+    <div class="count-badge" id="supCountBadge"></div>
   </div>
 </div>
 
 <div class="main">
-  <div class="state-box" id="loadingState">
-    <div class="spinner"></div>
-    <p>Cargando datos desde Google Sheets…</p>
-  </div>
-  <div class="error-msg" id="errorState" style="display:none"></div>
+  <div id="tabRegistros">
+    <div class="state-box" id="loadingState">
+      <div class="spinner"></div>
+      <p>Cargando datos desde Google Sheets…</p>
+    </div>
+    <div class="error-msg" id="errorState" style="display:none"></div>
 
-  <div class="table-card" id="tableCard" style="display:none">
-    <div class="table-wrap">
-      <table>
-        <thead>
-          <tr>
-            <th onclick="sortBy('EMPRESA')">Empresa</th>
-            <th onclick="sortBy('Campo')">Campo</th>
-            <th onclick="sortBy('Lote')">Lote</th>
-            <th onclick="sortBy('Campaña')">Campaña</th>
-            <th onclick="sortBy('Cultivo')">Cultivo</th>
-            <th onclick="sortBy('Destino')">Destino</th>
-            <th onclick="sortBy('Ambiente Regional')">Ambiente</th>
-            <th onclick="sortBy('Superficie Sembrada')">Sup. (ha)</th>
-            <th onclick="sortBy('Antecesor')">Antecesor</th>
-            <th onclick="sortBy('Fecha de Siembra')">F. Siembra</th>
-            <th onclick="sortBy('Rendimiento (kg/ha sembrada)')">Rinde kg/ha</th>
-          </tr>
-        </thead>
-        <tbody id="tableBody"></tbody>
-      </table>
+    <div class="table-card" id="tableCard" style="display:none">
+      <div class="table-wrap">
+        <table>
+          <thead>
+            <tr>
+              <th onclick="sortBy('EMPRESA')">Empresa</th>
+              <th onclick="sortBy('Campo')">Campo</th>
+              <th onclick="sortBy('Lote')">Lote</th>
+              <th onclick="sortBy('Campaña')">Campaña</th>
+              <th onclick="sortBy('Cultivo')">Cultivo</th>
+              <th onclick="sortBy('Destino')">Destino</th>
+              <th onclick="sortBy('Ambiente Regional')">Ambiente</th>
+              <th onclick="sortBy('Superficie Sembrada')">Sup. (ha)</th>
+              <th onclick="sortBy('Antecesor')">Antecesor</th>
+              <th onclick="sortBy('Fecha de Siembra')">F. Siembra</th>
+              <th onclick="sortBy('Rendimiento (kg/ha sembrada)')">Rinde kg/ha</th>
+            </tr>
+          </thead>
+          <tbody id="tableBody"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <div class="cards-view" id="cardsView"></div>
+  </div>
+
+  <div id="tabSuperficies" style="display:none; padding: 0;">
+    <div class="sup-layout">
+      <!-- Tabla pivot -->
+      <div class="sup-card">
+        <div class="sup-card-title"><span>📐</span> Superficie por Cultivo y Destino</div>
+        <div class="pivot-wrap">
+          <table class="pivot-tbl" id="pivotTable"><tbody><tr><td style="padding:40px;text-align:center;color:var(--text3)">Cargando…</td></tr></tbody></table>
+        </div>
+      </div>
+      <!-- Panel derecho: stat + torta -->
+      <div style="display:flex;flex-direction:column;gap:16px;">
+        <div class="sup-card">
+          <div class="sup-card-title"><span>📊</span> Total</div>
+          <div class="sup-stat" id="supStatTotal">
+            <span class="sup-stat-label">Superficie total</span>
+            <span class="sup-stat-val" id="supTotalHa">—</span>
+          </div>
+          <div class="sup-stat" id="supStatLotes">
+            <span class="sup-stat-label">Lotes</span>
+            <span class="sup-stat-val" id="supTotalLotes">—</span>
+          </div>
+        </div>
+        <div class="sup-card">
+          <div class="sup-card-title"><span>🥧</span> Distribución por Cultivo</div>
+          <div class="chart-wrap">
+            <canvas id="pieChart" height="260"></canvas>
+          </div>
+        </div>
+      </div>
     </div>
   </div>
-
-  <div class="cards-view" id="cardsView"></div>
 </div>
 
 <div class="overlay" id="overlay" onclick="closeDrawer()"></div>
@@ -358,12 +431,12 @@ function loadData() {
       buildColMap(allData[0]);
       console.log('Columnas CSV:', Object.keys(allData[0]));
       buildFilterDropdowns();
+      buildSupFilterDropdowns();
       applyFilters();
       document.getElementById('loadingState').style.display = 'none';
       document.getElementById('tableCard').style.display = 'block';
       document.getElementById('cardsView').style.display = 'block';
       setStatus('ok', allData.length + ' registros');
-      updateTheadOffset();
     },
     error(err) { showError('Error al cargar:\n' + err.message); }
   });
@@ -512,7 +585,234 @@ function refreshAllDropdowns() {
   FILTER_DEF.forEach(fd => refreshDropdown(fd));
 }
 
-// ── APPLY FILTERS ─────────────────────────────────────────────────────
+// ── TAB SWITCHING ─────────────────────────────────────────────────────
+let activeTab = 'registros';
+
+function switchTab(tab) {
+  activeTab = tab;
+  document.getElementById('tabBtnRegistros').classList.toggle('active', tab === 'registros');
+  document.getElementById('tabBtnSuperficies').classList.toggle('active', tab === 'superficies');
+  document.getElementById('tabRegistros').style.display  = tab === 'registros'  ? '' : 'none';
+  document.getElementById('tabSuperficies').style.display = tab === 'superficies' ? '' : 'none';
+  document.getElementById('filtersRegistros').style.display  = tab === 'registros'  ? '' : 'none';
+  document.getElementById('filtersSuperficies').style.display = tab === 'superficies' ? '' : 'none';
+  updateTopOffset();
+  if (tab === 'superficies') renderSuperficies();
+}
+
+// ── SUPERFICIES FILTERS ───────────────────────────────────────────────
+const SUP_SEL = { campana: new Set(), empresa: new Set(), campo: new Set(), lote: new Set(), destino: new Set() };
+const SUP_FILTER_DEF = [
+  { id: 'sup_campana', label: 'Campaña', col: 'Campaña',  selKey: 'campana' },
+  { id: 'sup_empresa', label: 'Empresa', col: 'EMPRESA',  selKey: 'empresa' },
+  { id: 'sup_campo',   label: 'Campo',   col: 'Campo',    selKey: 'campo'   },
+  { id: 'sup_lote',    label: 'Lote',    col: 'Lote',     selKey: 'lote'    },
+  { id: 'sup_destino', label: 'Destino', col: 'Destino',  selKey: 'destino' },
+];
+
+function buildSupFilterDropdowns() {
+  const container = document.getElementById('supFilterDropdowns');
+  container.innerHTML = '';
+  SUP_FILTER_DEF.forEach(fd => {
+    const wrap = document.createElement('div');
+    wrap.className = 'ms-wrap filter-group';
+    wrap.innerHTML = `
+      <span class="filter-label">${fd.label}</span>
+      <div class="ms-trigger" id="trigger-${fd.id}" onclick="toggleDropdown('${fd.id}')">
+        <span class="ms-trigger-text" id="triggerText-${fd.id}">Todos</span>
+        <span class="ms-arrow">▾</span>
+      </div>
+      <div class="ms-dropdown" id="dd-${fd.id}"></div>`;
+    container.appendChild(wrap);
+  });
+  refreshAllSupDropdowns();
+}
+
+function getSupAvailable(forId) {
+  const idx = SUP_FILTER_DEF.findIndex(f => f.id === forId);
+  return allData.filter(r => {
+    if (!r['Campo'] || !r['Cultivo']) return false;
+    for (let i = 0; i < idx; i++) {
+      const fd = SUP_FILTER_DEF[i];
+      if (SUP_SEL[fd.selKey].size > 0 && !SUP_SEL[fd.selKey].has(r[fd.col])) return false;
+    }
+    return true;
+  });
+}
+
+function refreshSupDropdown(fd) {
+  const available = getSupAvailable(fd.id);
+  const opts = [...new Set(available.map(r => r[fd.col]).filter(Boolean))].sort();
+  const dd = document.getElementById('dd-' + fd.id);
+  dd.innerHTML = '';
+  const allLi = document.createElement('label');
+  allLi.className = 'ms-option all-option';
+  const allCb = document.createElement('input');
+  allCb.type = 'checkbox'; allCb.checked = SUP_SEL[fd.selKey].size === 0;
+  allCb.onchange = () => { SUP_SEL[fd.selKey].clear(); onSupFilterChange(fd.id); };
+  allLi.appendChild(allCb); allLi.appendChild(document.createTextNode(' Todos'));
+  dd.appendChild(allLi);
+  opts.forEach(val => {
+    const li = document.createElement('label');
+    li.className = 'ms-option';
+    const cb = document.createElement('input');
+    cb.type = 'checkbox'; cb.value = val; cb.checked = SUP_SEL[fd.selKey].has(val);
+    cb.onchange = () => { if (cb.checked) SUP_SEL[fd.selKey].add(val); else SUP_SEL[fd.selKey].delete(val); onSupFilterChange(fd.id); };
+    li.appendChild(cb); li.appendChild(document.createTextNode(' ' + val));
+    dd.appendChild(li);
+  });
+  const trigger = document.getElementById('trigger-' + fd.id);
+  const trigText = document.getElementById('triggerText-' + fd.id);
+  const size = SUP_SEL[fd.selKey].size;
+  if (size === 0) { trigText.textContent = 'Todos'; trigger.classList.remove('has-selection'); }
+  else if (size === 1) { trigText.textContent = [...SUP_SEL[fd.selKey]][0]; trigger.classList.add('has-selection'); }
+  else { trigText.textContent = size + ' selec.'; trigger.classList.add('has-selection'); }
+}
+
+function refreshAllSupDropdowns() {
+  SUP_FILTER_DEF.forEach(fd => refreshSupDropdown(fd));
+}
+
+function onSupFilterChange(changedId) {
+  const idx = SUP_FILTER_DEF.findIndex(f => f.id === changedId);
+  for (let i = idx + 1; i < SUP_FILTER_DEF.length; i++) {
+    const fd = SUP_FILTER_DEF[i];
+    const availVals = new Set(getSupAvailable(fd.id).map(r => r[fd.col]).filter(Boolean));
+    for (const v of [...SUP_SEL[fd.selKey]]) { if (!availVals.has(v)) SUP_SEL[fd.selKey].delete(v); }
+    refreshSupDropdown(fd);
+  }
+  refreshSupDropdown(SUP_FILTER_DEF[idx]);
+  renderSuperficies();
+}
+
+// ── SUPERFICIES: RENDER ───────────────────────────────────────────────
+const CULTIVO_COLORS = {
+  soja:    '#eab308', maiz:    '#3b82f6', trigo:   '#f59e0b',
+  girasol: '#f97316', cebada:  '#8b5cf6', other:   '#94a3b8'
+};
+function cultivoColor(c) {
+  if (!c) return CULTIVO_COLORS.other;
+  const lc = c.toLowerCase();
+  if (lc.includes('soja'))   return CULTIVO_COLORS.soja;
+  if (lc.includes('maiz') || lc.includes('maíz')) return CULTIVO_COLORS.maiz;
+  if (lc.includes('trigo'))   return CULTIVO_COLORS.trigo;
+  if (lc.includes('girasol')) return CULTIVO_COLORS.girasol;
+  if (lc.includes('cebada'))  return CULTIVO_COLORS.cebada;
+  return CULTIVO_COLORS.other;
+}
+
+let pieChartInstance = null;
+
+function getSupFiltered() {
+  return allData.filter(r => {
+    if (!r['Campo'] || !r['Cultivo']) return false;
+    for (const fd of SUP_FILTER_DEF) {
+      if (SUP_SEL[fd.selKey].size > 0 && !SUP_SEL[fd.selKey].has(r[fd.col])) return false;
+    }
+    return true;
+  });
+}
+
+function parseSup(val) {
+  if (!val) return 0;
+  const n = parseFloat(String(val).replace(',', '.'));
+  return isNaN(n) ? 0 : n;
+}
+
+function renderSuperficies() {
+  const data = getSupFiltered();
+
+  // Conteo
+  document.getElementById('supCountBadge').innerHTML = `<strong>${data.length}</strong> / ${allData.length} registros`;
+
+  // Dimensiones del pivot
+  const cultivos = [...new Set(data.map(r => r['Cultivo']).filter(Boolean))].sort();
+  const destinos  = [...new Set(data.map(r => r['Destino']).filter(Boolean))].sort();
+
+  // Armar mapa de sumas
+  const sums = {}; // sums[cultivo][destino] = ha
+  const totByCultivo = {};
+  const totByDestino = {};
+  let grandTotal = 0;
+
+  cultivos.forEach(c => { sums[c] = {}; totByCultivo[c] = 0; });
+  destinos.forEach(d => { totByDestino[d] = 0; });
+
+  data.forEach(r => {
+    const c = r['Cultivo'], d = r['Destino'];
+    if (!c) return;
+    const ha = parseSup(r['Superficie Sembrada']);
+    if (!sums[c]) { sums[c] = {}; totByCultivo[c] = 0; }
+    sums[c][d] = (sums[c][d] || 0) + ha;
+    totByCultivo[c] = (totByCultivo[c] || 0) + ha;
+    if (d) totByDestino[d] = (totByDestino[d] || 0) + ha;
+    grandTotal += ha;
+  });
+
+  // Stats
+  document.getElementById('supTotalHa').innerHTML = `${fmtHa(grandTotal)} <small>ha</small>`;
+  document.getElementById('supTotalLotes').innerHTML = `${data.length}`;
+
+  // Pivot table
+  const tbl = document.getElementById('pivotTable');
+  if (!cultivos.length) {
+    tbl.innerHTML = '<tbody><tr><td style="padding:40px;text-align:center;color:var(--text3)">Sin datos para los filtros seleccionados</td></tr></tbody>';
+  } else {
+    let html = '<thead><tr><th>Cultivo</th>';
+    destinos.forEach(d => html += `<th class="num">${d}</th>`);
+    html += '<th class="num" style="color:var(--green)">Total</th></tr></thead><tbody>';
+
+    cultivos.forEach(c => {
+      html += `<tr><td class="cultivo-name">${cultivoTag(c)}</td>`;
+      destinos.forEach(d => {
+        const v = sums[c]?.[d] || 0;
+        html += `<td class="num ${v === 0 ? 'zero' : ''}">${v === 0 ? '—' : fmtHa(v)}</td>`;
+      });
+      html += `<td class="num grand-total">${fmtHa(totByCultivo[c])}</td></tr>`;
+    });
+
+    // Fila total
+    html += '<tr class="total-row"><td class="cultivo-name">TOTAL</td>';
+    destinos.forEach(d => html += `<td class="num">${fmtHa(totByDestino[d])}</td>`);
+    html += `<td class="num grand-total">${fmtHa(grandTotal)}</td></tr>`;
+    html += '</tbody>';
+    tbl.innerHTML = html;
+  }
+
+  // Pie chart
+  const pieData = cultivos.map(c => ({ label: c, value: totByCultivo[c], color: cultivoColor(c) }))
+    .filter(d => d.value > 0).sort((a,b) => b.value - a.value);
+
+  if (pieChartInstance) { pieChartInstance.destroy(); pieChartInstance = null; }
+  if (pieData.length > 0) {
+    const ctx = document.getElementById('pieChart').getContext('2d');
+    pieChartInstance = new Chart(ctx, {
+      type: 'doughnut',
+      data: {
+        labels: pieData.map(d => d.label),
+        datasets: [{ data: pieData.map(d => d.value), backgroundColor: pieData.map(d => d.color), borderWidth: 2, borderColor: '#fff' }]
+      },
+      options: {
+        responsive: true,
+        plugins: {
+          legend: { position: 'bottom', labels: { font: { family: 'IBM Plex Sans', size: 12 }, padding: 10, boxWidth: 12 } },
+          tooltip: {
+            callbacks: {
+              label: ctx => ` ${ctx.label}: ${fmtHa(ctx.raw)} ha (${((ctx.raw / grandTotal) * 100).toFixed(1)}%)`
+            }
+          }
+        }
+      }
+    });
+  }
+}
+
+function fmtHa(n) {
+  if (!n) return '0';
+  return n.toLocaleString('es-AR', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
+}
+
+
 function applyFilters() {
   const search = document.getElementById('search').value.toLowerCase();
   filtered = allData.filter(r => {
