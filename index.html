@@ -119,44 +119,14 @@ header {
 .count-badge strong { color: var(--green); }
 
 /* ── MAIN ── */
-.main {
-  padding: 20px;
-  max-width: 1400px;
-  margin: 0 auto;
-  height: calc(100vh - var(--top-offset));
-  display: flex;
-  flex-direction: column;
-  gap: 0;
-}
+.main { padding: 20px; max-width: 1400px; margin: 0 auto; }
 
-.table-card {
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 12px;
-  box-shadow: var(--shadow);
-  flex: 1;
-  display: flex;
-  flex-direction: column;
-  overflow: hidden;  /* borde redondeado */
-  min-height: 0;     /* importante para que flex respete el límite */
-}
-
-/* El scroll ocurre ACÁ, no en la página */
-.table-wrap {
-  flex: 1;
-  overflow: auto;
-  -webkit-overflow-scrolling: touch;
-}
-
+/* Sin overflow en el card para que sticky funcione */
+.table-card { background: var(--surface); border: 1px solid var(--border); border-radius: 12px; box-shadow: var(--shadow); }
+.table-wrap { overflow-x: auto; -webkit-overflow-scrolling: touch; }
 table { width: 100%; border-collapse: collapse; font-size: 13px; }
-
-/* thead sticky dentro de .table-wrap — SIEMPRE funciona */
-thead th {
-  background: var(--surface2);
-  position: sticky;
-  top: 0;
-  z-index: 10;
-}
+/* top se setea por JS directamente en cada th */
+thead th { background: var(--surface2); position: sticky; z-index: 10; }
 th { padding: 10px 14px; text-align: left; font-family: 'IBM Plex Mono', monospace; font-size: 10px; font-weight: 600; color: var(--text3); text-transform: uppercase; letter-spacing: .6px; white-space: nowrap; border-bottom: 2px solid var(--border); cursor: pointer; user-select: none; }
 th:hover { color: var(--text2); }
 th.sorted { color: var(--green); }
@@ -186,7 +156,7 @@ td.mono { font-family: 'IBM Plex Mono', monospace; font-size: 12px; }
 .error-msg { background: #fef2f2; border: 1px solid #fecaca; border-radius: 8px; padding: 16px; color: #991b1b; font-size: 13px; font-family: 'IBM Plex Mono', monospace; white-space: pre-wrap; }
 
 /* Cards mobile */
-.cards-view { display: none; flex: 1; overflow-y: auto; }
+.cards-view { display: none; }
 .card { background: var(--surface); border: 1px solid var(--border); border-radius: 10px; padding: 14px; cursor: pointer; transition: border-color .15s; margin-bottom: 10px; box-shadow: var(--shadow); }
 .card:hover { border-color: var(--green); }
 .card.active-card { border-color: var(--green); background: #f0fdf4; }
@@ -241,13 +211,13 @@ td.mono { font-family: 'IBM Plex Mono', monospace; font-size: 12px; }
 /* Responsive */
 @media (max-width: 768px) {
   .table-card { display: none; }
-  .cards-view { display: flex; flex-direction: column; }
+  .cards-view { display: block; }
   .search-input { width: 130px; }
   .filters-bar { overflow-x: auto; flex-wrap: nowrap; padding: 10px 12px; }
   .count-badge { display: none; }
   .drawer { width: 100vw; }
   .dsec-body { grid-template-columns: 1fr; }
-  .main { padding: 12px; gap: 12px; }
+  .main { padding: 12px; }
 }
 @media (min-width: 769px) {
   .cards-view { display: none !important; }
@@ -368,17 +338,14 @@ function getF(row, ...names) {
 // ── LOAD ─────────────────────────────────────────────────────────────
 window.onload = () => {
   loadData();
-  updateLayout();
-  new ResizeObserver(updateLayout).observe(document.getElementById('topBar'));
+  updateStickyHeader();
+  new ResizeObserver(updateStickyHeader).observe(document.getElementById('topBar'));
 };
 
-function updateLayout() {
+function updateStickyHeader() {
   const h = document.getElementById('topBar').offsetHeight;
-  document.documentElement.style.setProperty('--top-offset', h + 'px');
-  // La altura del main se calcula con CSS calc(100vh - var(--top-offset))
-  // pero para garantizar compatibilidad también lo seteamos por JS:
-  const main = document.querySelector('.main');
-  if (main) main.style.height = `calc(100vh - ${h}px)`;
+  // Aplicar top directamente a cada th — más confiable que CSS variable
+  document.querySelectorAll('thead th').forEach(th => th.style.top = h + 'px');
 }
 
 function loadData() {
@@ -563,6 +530,7 @@ function applyFilters() {
     return true;
   });
   sortData(); renderTable(); renderCards();
+  updateStickyHeader();
   document.getElementById('countBadge').innerHTML =
     `<strong>${filtered.length}</strong> / ${allData.length} registros`;
 }
@@ -570,7 +538,7 @@ function applyFilters() {
 // ── SORT ──────────────────────────────────────────────────────────────
 function sortBy(col) {
   sortAsc = sortCol===col ? !sortAsc : true; sortCol=col;
-  sortData(); renderTable();
+  sortData(); renderTable(); updateStickyHeader();
 }
 function sortData() {
   filtered.sort((a,b) => {
