@@ -235,7 +235,6 @@ td.mono { font-family: 'IBM Plex Mono', monospace; font-size: 12px; }
 .pivot-tbl tr.total-row td.num { color: var(--green); }
 .pivot-tbl tr:last-child td { border-bottom: none; }
 .pivot-tbl td.grand-total { color: var(--green); font-weight: 700; }
-.pivot-tbl tbody tr[style*="cursor"]:hover td { background: #f0fdf4; }
 .chart-wrap { padding: 16px; }
 .sup-stat { display: flex; flex-direction: column; gap: 2px; padding: 10px 16px; border-bottom: 1px solid var(--border); }
 .sup-stat-label { font-family: 'IBM Plex Mono', monospace; font-size: 10px; color: var(--text3); text-transform: uppercase; }
@@ -256,6 +255,68 @@ td.mono { font-family: 'IBM Plex Mono', monospace; font-size: 12px; }
 @media (min-width: 769px) {
   .cards-view { display: none !important; }
 }
+
+/* ── MONITOREO INSECTOS ─────────────────────────────────────────────── */
+#tab-monitoreo { padding: 0; }
+#tab-monitoreo .mon-hdr { background: var(--surface); border-bottom: 1px solid var(--border); padding: 10px 20px; display: flex; align-items: center; gap: 12px; }
+#tab-monitoreo .mon-hdr-title h3 { font-size: 14px; font-weight: 700; font-family: 'IBM Plex Sans', sans-serif; color: var(--text); }
+#tab-monitoreo .mon-hdr-title p { font-size: 11px; color: var(--text2); }
+#tab-monitoreo .mon-tabs { display: flex; background: var(--surface); border-bottom: 1px solid var(--border); padding: 0 20px; gap: 4px; }
+#tab-monitoreo .mon-sub-tab { padding: 9px 16px; border: none; background: none; cursor: pointer; font-size: 12px; font-weight: 500; color: var(--text2); border-bottom: 2px solid transparent; margin-bottom: -1px; font-family: 'IBM Plex Sans', sans-serif; transition: color .15s; }
+#tab-monitoreo .mon-sub-tab.active { color: var(--green); border-bottom-color: var(--green); }
+#tab-monitoreo .mon-filters { background: var(--surface); border-bottom: 1px solid var(--border); padding: 8px 20px; display: flex; flex-wrap: wrap; gap: 8px; align-items: flex-end; }
+#tab-monitoreo .mon-fg { display: flex; flex-direction: column; gap: 2px; }
+#tab-monitoreo .mon-fg label { font-size: 10px; font-weight: 600; color: var(--text3); text-transform: uppercase; letter-spacing: .04em; font-family: 'IBM Plex Mono', monospace; }
+#tab-monitoreo .mon-fg select, #tab-monitoreo .mon-fg input[type="date"] { padding: 4px 8px; border: 1px solid var(--border); border-radius: 5px; font-size: 12px; font-family: 'IBM Plex Sans', sans-serif; background: var(--surface2); min-width: 130px; color: var(--text); outline: none; transition: border-color .15s; }
+#tab-monitoreo .mon-fg select:focus, #tab-monitoreo .mon-fg input:focus { border-color: var(--green); }
+#tab-monitoreo .mon-fsep { width: 1px; height: 32px; background: var(--border); margin: 0 4px; align-self: center; }
+#tab-monitoreo .mon-tbl-wrap { padding: 16px 20px; overflow-x: auto; }
+#tab-monitoreo table { width: 100%; border-collapse: collapse; background: var(--surface); border-radius: 8px; overflow: hidden; box-shadow: var(--shadow); }
+#tab-monitoreo table thead th { background: var(--surface2); color: var(--text2); font-size: 11px; font-weight: 600; padding: 8px 10px; text-align: center; border-bottom: 2px solid var(--border); white-space: nowrap; cursor: pointer; user-select: none; position: static; letter-spacing: .3px; text-transform: uppercase; }
+#tab-monitoreo table thead th.mon-td-left { text-align: left; }
+#tab-monitoreo table thead th.sortable::after { content: ' ↕'; font-size: 10px; opacity: .35; }
+#tab-monitoreo table thead th.sort-asc::after { content: ' ↑'; opacity: 1; color: var(--green); }
+#tab-monitoreo table thead th.sort-desc::after { content: ' ↓'; opacity: 1; color: var(--green); }
+#tab-monitoreo table tbody td { padding: 7px 10px; border-bottom: 1px solid var(--border); text-align: center; white-space: nowrap; color: var(--text2); font-weight: 400; font-size: 13px; }
+#tab-monitoreo table tbody tr:last-child td { border-bottom: none; }
+#tab-monitoreo table tbody tr:hover td { background: #f0fdf4; }
+#tab-monitoreo .mon-col-sep { border-left: 2px solid #d4e4d4 !important; }
+.mon-ef { display: inline-block; width: 28px; height: 18px; line-height: 18px; border-radius: 4px; font-size: 10px; font-weight: 700; color: #fff; text-align: center; }
+.mon-ef-R1{background:#3b82f6}.mon-ef-R2{background:#10b981}.mon-ef-R3{background:#22c55e}
+.mon-ef-R4{background:#eab308}.mon-ef-R5{background:#f97316}.mon-ef-R6{background:#ef4444}.mon-ef-R7{background:#8b5cf6}
+.mon-badge { display: inline-block; padding: 2px 8px; border-radius: 10px; font-size: 10px; font-weight: 600; font-family: 'IBM Plex Mono', monospace; }
+.mon-badge-ok { background: #dcfce7; color: #15803d; }
+.mon-badge-warn { background: #fef9c3; color: #a16207; }
+.mon-badge-alert { background: #fee2e2; color: #b91c1c; }
+.mon-pct-cell { cursor: pointer; border-radius: 4px; padding: 3px 8px; display: inline-block; min-width: 46px; font-weight: 600; font-size: 12px; transition: transform .1s; font-family: 'IBM Plex Mono', monospace; }
+.mon-pct-cell:hover { transform: scale(1.08); }
+.mon-destino-sel { padding: 2px 5px; border: 1px solid var(--border); border-radius: 4px; font-size: 11px; font-family: 'IBM Plex Sans', sans-serif; background: var(--surface); cursor: pointer; color: var(--text); }
+.mon-overlay { position: fixed; inset: 0; background: rgba(0,0,0,.45); z-index: 300; display: flex; align-items: center; justify-content: center; }
+.mon-modal { background: var(--surface); border-radius: 12px; box-shadow: 0 20px 60px rgba(0,0,0,.3); max-width: 640px; width: 95%; max-height: 85vh; display: flex; flex-direction: column; }
+.mon-modal-hdr { padding: 16px 20px; border-bottom: 1px solid var(--border); display: flex; align-items: center; justify-content: space-between; }
+.mon-modal-hdr h3 { font-size: 14px; font-weight: 700; color: var(--text); }
+.mon-modal-body { padding: 16px 20px; overflow-y: auto; flex: 1; }
+.mon-modal-close { background: none; border: none; font-size: 18px; cursor: pointer; color: var(--text2); padding: 4px; }
+.mon-bar-wrap { display: flex; align-items: center; gap: 8px; margin-bottom: 3px; }
+.mon-bar-label { width: 145px; font-size: 11px; color: var(--text2); text-align: right; flex-shrink: 0; }
+.mon-bar-track { flex: 1; height: 10px; background: var(--bg); border-radius: 5px; overflow: hidden; }
+.mon-bar-fill { height: 100%; border-radius: 5px; }
+.mon-bar-val { width: 50px; font-size: 11px; font-weight: 600; text-align: right; flex-shrink: 0; font-family: 'IBM Plex Mono', monospace; }
+.mon-bar-sub { font-size: 10px; color: var(--text3); text-align: right; margin-bottom: 7px; }
+.mon-site-tbl { width: 100%; border-collapse: collapse; font-size: 12px; margin-top: 8px; }
+.mon-site-tbl th { background: var(--surface2); padding: 5px 8px; text-align: center; font-size: 10px; font-weight: 600; color: var(--text3); border-bottom: 1px solid var(--border); text-transform: uppercase; letter-spacing: .4px; font-family: 'IBM Plex Mono', monospace; }
+.mon-site-tbl td { padding: 4px 8px; border-bottom: 1px solid var(--bg); text-align: center; color: var(--text2); font-weight: 400; }
+.mon-acum-wrap { padding: 16px 20px; }
+.mon-acum-info { background: var(--green-bg); border: 1px solid #bbdebb; border-radius: 8px; padding: 10px 14px; margin-bottom: 12px; font-size: 12px; color: #2d572d; font-family: 'IBM Plex Sans', sans-serif; }
+.mon-acum-ctrl { background: var(--surface); border: 1px solid var(--border); border-radius: 8px; padding: 10px 14px; margin-bottom: 12px; display: flex; align-items: center; gap: 12px; flex-wrap: wrap; }
+.mon-date-ctrl { display: flex; align-items: center; gap: 6px; }
+.mon-date-ctrl label { font-size: 11px; font-weight: 600; color: var(--text2); font-family: 'IBM Plex Mono', monospace; text-transform: uppercase; letter-spacing: .04em; }
+.mon-expand-row td { padding: 0 !important; }
+.mon-expand-content { background: var(--surface2); padding: 12px 16px; border-top: 1px solid var(--border); }
+.mon-history-tbl { width: 100%; border-collapse: collapse; font-size: 11px; max-width: 420px; }
+.mon-history-tbl th { padding: 4px 8px; text-align: center; font-size: 10px; color: var(--text3); font-weight: 600; background: var(--bg); border-bottom: 1px solid var(--border); font-family: 'IBM Plex Mono', monospace; text-transform: uppercase; }
+.mon-history-tbl td { padding: 4px 8px; text-align: center; border-bottom: 1px solid var(--bg); color: var(--text2); font-weight: 400; }
+.mon-no-data { text-align: center; padding: 40px; color: var(--text3); font-size: 12px; font-family: 'IBM Plex Mono', monospace; }
 </style>
 </head>
 <body>
@@ -578,6 +639,120 @@ td.mono { font-family: 'IBM Plex Mono', monospace; font-size: 12px; }
     </div>
   </div>
 
+  <!-- MONITOREO INSECTOS -->
+  <div id="tab-monitoreo" style="display:none">
+
+    <div class="mon-hdr">
+      <div class="mon-hdr-title">
+        <h3>🐛 Monitoreo de Insectos · Soja</h3>
+        <p id="mon-hdr-stats">Cargando datos…</p>
+      </div>
+      <button class="btn-new" onclick="monResetFilters()" style="font-size:12px;padding:5px 14px;background:var(--surface2);color:var(--text2);border:1px solid var(--border)">↺ Reiniciar filtros</button>
+    </div>
+
+    <div class="mon-tabs">
+      <button class="mon-sub-tab active" id="mon-tab-ult"  onclick="monSwitchSubTab('ult')">Último monitoreo</button>
+      <button class="mon-sub-tab"        id="mon-tab-acum" onclick="monSwitchSubTab('acum')">Umbral acumulado (chinches)</button>
+    </div>
+
+    <div class="mon-filters" id="mon-filters-bar">
+      <div class="mon-fg">
+        <label>Empresa</label>
+        <select id="mon-f-empresa" onchange="monCascadeFrom('empresa')"><option value="">Todas</option></select>
+      </div>
+      <div class="mon-fg">
+        <label>Campo</label>
+        <select id="mon-f-campo" onchange="monCascadeFrom('campo')"><option value="">Todos</option></select>
+      </div>
+      <div class="mon-fg">
+        <label>Lote</label>
+        <select id="mon-f-lote" onchange="monCascadeFrom('lote')"><option value="">Todos</option></select>
+      </div>
+      <div class="mon-fg">
+        <label>Cultivo</label>
+        <select id="mon-f-cultivo" onchange="monApplyFilters()"><option value="">Todos</option></select>
+      </div>
+      <div class="mon-fg" id="mon-ef-wrap">
+        <label>EF</label>
+        <select id="mon-f-ef" onchange="monApplyFilters()"><option value="">Todos</option></select>
+      </div>
+      <div class="mon-fsep"></div>
+      <div class="mon-fg">
+        <label>Responsable</label>
+        <select id="mon-f-resp" onchange="monApplyFilters()"><option value="">Todos</option></select>
+      </div>
+      <div id="mon-date-filters-slot"></div>
+    </div>
+
+    <!-- Último monitoreo -->
+    <div id="mon-panel-ult">
+      <div class="mon-tbl-wrap">
+        <table id="mon-tbl-ult">
+          <thead><tr>
+            <th class="sortable mon-td-left" data-mon-col="empresa">Empresa</th>
+            <th class="sortable mon-td-left" data-mon-col="campo">Campo</th>
+            <th class="sortable mon-td-left" data-mon-col="lote">Lote</th>
+            <th class="sortable" data-mon-col="cultivo">Cultivo</th>
+            <th class="sortable" data-mon-col="fecha">Fecha</th>
+            <th class="sortable" data-mon-col="ef">EF</th>
+            <th class="sortable" data-mon-col="resp">Resp.</th>
+            <th>Destino</th>
+            <th class="mon-col-sep sortable" data-mon-col="me_gt">Me&gt;1,5</th>
+            <th class="sortable" data-mon-col="me_lt">Me&lt;1,5</th>
+            <th class="sortable" data-mon-col="gp">GP</th>
+            <th class="sortable" data-mon-col="thecla">Thecla</th>
+            <th class="sortable" data-mon-col="bol">Bol</th>
+            <th class="mon-col-sep sortable" data-mon-col="chinche">Chinche</th>
+            <th class="mon-col-sep sortable" data-mon-col="aran">Arañuela</th>
+            <th>Estado</th>
+          </tr></thead>
+          <tbody id="mon-tbody-ult"><tr><td colspan="16" class="mon-no-data"><div class="spinner" style="margin:0 auto"></div></td></tr></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Umbral acumulado -->
+    <div id="mon-panel-acum" style="display:none">
+      <div class="mon-acum-wrap">
+        <div class="mon-acum-info">
+          <b>Umbral acumulado:</b> suma del % máximo de chinches por estadio (R3–R7). R1 y R2 se excluyen. Umbral de acción = 100%.
+        </div>
+        <div class="mon-acum-ctrl">
+          <div class="mon-date-ctrl">
+            <label>Inicio global del acumulado:</label>
+            <input type="date" id="mon-acum-date-global" onchange="monGlobalDateChanged()">
+          </div>
+          <span style="font-size:11px;color:var(--text2)">Al cambiar la fecha global se restablecen las fechas individuales de todos los lotes.</span>
+        </div>
+        <table id="mon-tbl-acum">
+          <thead><tr>
+            <th class="sortable mon-td-left" data-mon-col="empresa">Empresa</th>
+            <th class="sortable mon-td-left" data-mon-col="campo">Campo</th>
+            <th class="sortable mon-td-left" data-mon-col="lote">Lote</th>
+            <th class="sortable" data-mon-col="cultivo">Cultivo</th>
+            <th>Destino</th>
+            <th>Inicio conteo</th>
+            <th class="sortable" data-mon-col="acum">Acumulado</th>
+            <th>Estado</th>
+          </tr></thead>
+          <tbody id="mon-tbody-acum"></tbody>
+        </table>
+      </div>
+    </div>
+
+    <!-- Modal detalle -->
+    <div class="mon-overlay" id="mon-modal-overlay" style="display:none" onclick="if(event.target===this)monCloseModal()">
+      <div class="mon-modal" onclick="event.stopPropagation()">
+        <div class="mon-modal-hdr">
+          <h3 id="mon-modal-title">Detalle</h3>
+          <button class="mon-modal-close" onclick="monCloseModal()">✕</button>
+        </div>
+        <div class="mon-modal-body" id="mon-modal-body"></div>
+      </div>
+    </div>
+
+  </div>
+
 </div>
 
 <div class="overlay" id="overlay" onclick="closeDrawer()"></div>
@@ -628,27 +803,6 @@ function getF(row, ...names) {
     if (mapped && hasVal(row[mapped])) return row[mapped];
   }
   return null;
-}
-
-// Parsea número en formato argentino: punto = miles, coma = decimal
-// Ej: "1.500" → 1500, "1.500,25" → 1500.25, "1,5" → 1.5
-function pn(v) {
-  if (v === null || v === undefined) return null;
-  let s = String(v).trim();
-  if (!s) return null;
-  if (s.includes(',') && s.includes('.')) {
-    // Ambos: punto = miles, coma = decimal
-    s = s.replace(/\./g, '').replace(',', '.');
-  } else if (s.includes(',')) {
-    // Solo coma = decimal
-    s = s.replace(',', '.');
-  } else if (/^\d{1,3}(\.\d{3})+$/.test(s)) {
-    // Solo punto con patrón X.YYY → separador de miles
-    s = s.replace(/\./g, '');
-  }
-  // Si solo tiene punto como decimal (ej "1.5"), se deja igual
-  const n = parseFloat(s);
-  return isNaN(n) ? null : n;
 }
 
 // ── LOAD ─────────────────────────────────────────────────────────────
@@ -732,14 +886,12 @@ function closeAllDropdowns() {
   document.querySelectorAll('.ms-trigger').forEach(t => t.classList.remove('active'));
 }
 
-// Calcula opciones disponibles ignorando la propia selección del filtro (bidireccional)
+// Calcula opciones disponibles para cada filtro dada la selección de los anteriores
 function getAvailable(forId) {
+  const idx = FILTER_DEF.findIndex(f => f.id === forId);
   return allData.filter(r => {
-    const campo = r['Campo'] ? String(r['Campo']).trim() : '';
-    const cultivo = r['Cultivo'] ? String(r['Cultivo']).trim() : '';
-    if (!campo || !cultivo) return false;
-    for (const fd of FILTER_DEF) {
-      if (fd.id === forId) continue;
+    for (let i = 0; i < idx; i++) {
+      const fd = FILTER_DEF[i];
       if (SEL[fd.id].size > 0 && !SEL[fd.id].has(r[fd.col])) return false;
     }
     return true;
@@ -803,16 +955,24 @@ function refreshDropdown(fd) {
   }
 }
 
+function refreshAllDropdowns() {
+  FILTER_DEF.forEach(fd => refreshDropdown(fd));
+}
+
 function onFilterChange(changedId) {
-  // Bidireccional: recalcular todos los filtros, limpiar selecciones que ya no están disponibles
-  for (const fd of FILTER_DEF) {
-    if (fd.id === changedId) continue;
-    const availVals = new Set(getAvailable(fd.id).map(r => r[fd.col]).filter(Boolean));
+  // Para filtros que vienen DESPUÉS del que cambió, resetear selección si ya no están disponibles
+  const idx = FILTER_DEF.findIndex(f => f.id === changedId);
+  for (let i = idx + 1; i < FILTER_DEF.length; i++) {
+    const fd = FILTER_DEF[i];
+    const available = getAvailable(fd.id);
+    const availVals = new Set(available.map(r => r[fd.col]).filter(Boolean));
+    // Quitar valores seleccionados que ya no están disponibles
     for (const v of [...SEL[fd.id]]) {
       if (!availVals.has(v)) SEL[fd.id].delete(v);
     }
+    refreshDropdown(fd);
   }
-  refreshAllDropdowns();
+  refreshDropdown(FILTER_DEF[idx]); // update trigger text
   applyFilters();
 }
 
@@ -822,12 +982,12 @@ function refreshAllDropdowns() {
 
 // ── TAB SWITCHING ─────────────────────────────────────────────────────
 let activeTab = 'registros';
-const SUMMARY_TABS = ['superficies', 'porlote', 'suelo', 'genetica', 'plansiembra', 'fertilizante', 'recn'];
+const SUMMARY_TABS = ['superficies', 'porlote', 'suelo', 'genetica', 'plansiembra', 'fertilizante', 'recn', 'monitoreo'];
 
 function switchTab(tab) {
   activeTab = tab;
   // Botones
-  const btnMap = { registros:'tabBtnRegistros', superficies:'tabBtnSuperficies', porlote:'tabBtnPorLote', suelo:'tabBtnSuelo', genetica:'tabBtnGenetica', plansiembra:'tabBtnPlanSiembra', fertilizante:'tabBtnFertilizante', recn:'tabBtnRecN' };
+  const btnMap = { registros:'tabBtnRegistros', superficies:'tabBtnSuperficies', porlote:'tabBtnPorLote', suelo:'tabBtnSuelo', genetica:'tabBtnGenetica', plansiembra:'tabBtnPlanSiembra', fertilizante:'tabBtnFertilizante', recn:'tabBtnRecN', monitoreo:'tabBtnMonitoreo' };
   Object.entries(btnMap).forEach(([t, id]) => {
     document.getElementById(id)?.classList.toggle('active', t === tab);
   });
@@ -840,6 +1000,7 @@ function switchTab(tab) {
   document.getElementById('tabPlanSiembra').style.display   = tab === 'plansiembra'  ? '' : 'none';
   document.getElementById('tabFertilizante').style.display  = tab === 'fertilizante' ? '' : 'none';
   document.getElementById('tabRecN').style.display          = tab === 'recn'         ? '' : 'none';
+  document.getElementById('tab-monitoreo').style.display    = tab === 'monitoreo'    ? '' : 'none';
   // Filtros
   document.getElementById('filtersRegistros').style.display = tab === 'registros' ? '' : 'none';
   document.getElementById('filtersResumenes').style.display  = SUMMARY_TABS.includes(tab) ? '' : 'none';
@@ -851,6 +1012,7 @@ function switchTab(tab) {
   if (tab === 'plansiembra')  renderPlanSiembra();
   if (tab === 'fertilizante') renderFertilizante();
   if (tab === 'recn')         renderRecN();
+  if (tab === 'monitoreo')    initMonitoreo();
 }
 
 // ── SUPERFICIES FILTERS ───────────────────────────────────────────────
@@ -883,10 +1045,11 @@ function buildSupFilterDropdowns() {
 }
 
 function getSupAvailable(forId) {
+  const idx = SUP_FILTER_DEF.findIndex(f => f.id === forId);
   return allData.filter(r => {
     if (!r['Campo'] || !r['Cultivo']) return false;
-    for (const fd of SUP_FILTER_DEF) {
-      if (fd.id === forId) continue;
+    for (let i = 0; i < idx; i++) {
+      const fd = SUP_FILTER_DEF[i];
       if (SUP_SEL[fd.selKey].size > 0 && !SUP_SEL[fd.selKey].has(r[fd.col])) return false;
     }
     return true;
@@ -927,15 +1090,14 @@ function refreshAllSupDropdowns() {
 }
 
 function onSupFilterChange(changedId) {
-  // Bidireccional: recalcular todos los filtros, limpiar selecciones que ya no están disponibles
-  for (const fd of SUP_FILTER_DEF) {
-    if (fd.id === changedId) continue;
+  const idx = SUP_FILTER_DEF.findIndex(f => f.id === changedId);
+  for (let i = idx + 1; i < SUP_FILTER_DEF.length; i++) {
+    const fd = SUP_FILTER_DEF[i];
     const availVals = new Set(getSupAvailable(fd.id).map(r => r[fd.col]).filter(Boolean));
-    for (const v of [...SUP_SEL[fd.selKey]]) {
-      if (!availVals.has(v)) SUP_SEL[fd.selKey].delete(v);
-    }
+    for (const v of [...SUP_SEL[fd.selKey]]) { if (!availVals.has(v)) SUP_SEL[fd.selKey].delete(v); }
+    refreshSupDropdown(fd);
   }
-  refreshAllSupDropdowns();
+  refreshSupDropdown(SUP_FILTER_DEF[idx]);
   if (activeTab === 'superficies') renderSuperficies();
   if (activeTab === 'porlote')     renderPorLote();
   if (activeTab === 'suelo')       renderSuelo();
@@ -1088,22 +1250,17 @@ function renderPorLote() {
   document.getElementById('supCountBadge').innerHTML = `<strong>${data.length}</strong> / ${allData.length} registros`;
   const tbody = document.getElementById('loteBody');
   if (!data.length) { tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:40px;color:var(--text3)">Sin resultados</td></tr>'; return; }
-  tbody.innerHTML = '';
-  data.forEach(r => {
-    const idx = allData.indexOf(r);
+  tbody.innerHTML = data.map(r => {
     const ha = parseSup(r['Superficie Sembrada']);
-    const tr = document.createElement('tr');
-    tr.style.cursor = 'pointer';
-    tr.onclick = () => openDrawer(r, idx);
-    tr.innerHTML = `
+    return `<tr>
       <td>${r['EMPRESA']||'—'}</td>
       <td style="font-weight:600">${r['Campo']||'—'}</td>
       <td style="font-family:'IBM Plex Mono',monospace;font-size:12px">${r['Lote']||'—'}</td>
       <td>${cultivoTag(r['Cultivo'])}</td>
       <td>${r['Antecesor']||'—'}</td>
-      <td class="num">${ha ? fmtHa(ha) : '—'}</td>`;
-    tbody.appendChild(tr);
-  });
+      <td class="num">${ha ? fmtHa(ha) : '—'}</td>
+    </tr>`;
+  }).join('');
 }
 
 // ── SUELO ─────────────────────────────────────────────────────────────
@@ -1127,16 +1284,11 @@ function renderSuelo() {
   document.getElementById('supCountBadge').innerHTML = `<strong>${data.length}</strong> registros con análisis`;
   const tbody = document.getElementById('sueloBody');
   if (!data.length) { tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;padding:40px;color:var(--text3)">Sin datos de análisis para los filtros seleccionados</td></tr>'; return; }
-  tbody.innerHTML = '';
-  data.forEach(r => {
-    const idx = allData.indexOf(r);
+  tbody.innerHTML = data.map(r => {
     const v = col => { const val = r[col]; return (val && hasVal(val)) ? val : '—'; };
     const pVal = parseFloat(String(r['P']||'').replace(',','.'));
     const pClass = isNaN(pVal) ? '' : pVal < 10 ? 'style="color:#ef4444;font-weight:700"' : pVal < 20 ? 'style="color:#f59e0b;font-weight:600"' : 'style="color:var(--green);font-weight:600"';
-    const tr = document.createElement('tr');
-    tr.style.cursor = 'pointer';
-    tr.onclick = () => openDrawer(r, idx);
-    tr.innerHTML = `
+    return `<tr>
       <td>${r['EMPRESA']||'—'}</td>
       <td style="font-weight:600">${r['Campo']||'—'}</td>
       <td style="font-family:'IBM Plex Mono',monospace;font-size:12px">${r['Lote']||'—'}</td>
@@ -1145,9 +1297,9 @@ function renderSuelo() {
       <td class="num">${v('pH')}</td>
       <td class="num">${v('M.O.')}</td>
       <td class="num" ${pClass}>${v('P')}</td>
-      <td class="num">${v('Año análisis P')}</td>`;
-    tbody.appendChild(tr);
-  });
+      <td class="num">${v('Año análisis P')}</td>
+    </tr>`;
+  }).join('');
 }
 
 // ── GENÉTICA ──────────────────────────────────────────────────────────
@@ -1192,29 +1344,16 @@ function renderGenetica() {
 
   const grandTotal = rows.reduce((s, r) => s + r.ha, 0);
 
+  // Tabla
   const tbody = document.getElementById('geneticaBody');
   if (!rows.length) { tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;padding:40px;color:var(--text3)">Sin datos</td></tr>'; return; }
-  tbody.innerHTML = '';
-  rows.forEach(r => {
-    const tr = document.createElement('tr');
-    tr.style.cursor = 'pointer';
-    tr.title = `Ver registros de ${r.gen} (${r.lotes} lote${r.lotes!==1?'s':''})`;
-    tr.onclick = () => {
-      // Buscar el primer registro real que tenga esta genética y abrir drawer
-      const match = allData.find(d => d['Genética'] && d['Genética'].trim() === r.gen);
-      if (match) openDrawer(match, allData.indexOf(match));
-    };
-    tr.innerHTML = `
-      <td style="font-weight:600">${r.gen}</td>
-      <td>${cultivoTag(r.cultivo)}</td>
-      <td class="num">${fmtHa(r.ha)}</td>
-      <td class="num">${r.lotes}</td>`;
-    tbody.appendChild(tr);
-  });
-  const totRow = document.createElement('tr');
-  totRow.className = 'total-row';
-  totRow.innerHTML = `<td>TOTAL</td><td></td><td class="num grand-total">${fmtHa(grandTotal)}</td><td class="num grand-total">${rows.reduce((s,r)=>s+r.lotes,0)}</td>`;
-  tbody.appendChild(totRow);
+  tbody.innerHTML = rows.map(r => `<tr>
+    <td style="font-weight:600">${r.gen}</td>
+    <td>${cultivoTag(r.cultivo)}</td>
+    <td class="num">${fmtHa(r.ha)}</td>
+    <td class="num">${r.lotes}</td>
+  </tr>`).join('')
+  + `<tr class="total-row"><td>TOTAL</td><td></td><td class="num grand-total">${fmtHa(grandTotal)}</td><td class="num grand-total">${rows.reduce((s,r)=>s+r.lotes,0)}</td></tr>`;
 
   // Pie chart genética
   const top = rows.slice(0, 12); // máximo 12 en el gráfico
@@ -1310,16 +1449,16 @@ function renderPlanSiembra() {
 
   let totSup = 0, totFertP = 0, totSemilla = 0;
 
-  tbody.innerHTML = '';
-  data.forEach(r => {
-    const idx = allData.indexOf(r);
+  const rows = data.map(r => {
     const vn = key => { const n = parseFloat(String(r[key]||'').replace(',','.')); return isNaN(n) ? null : n; };
     const vs = key => (r[key] && hasVal(r[key])) ? r[key] : '—';
 
     const sup   = vn('Superficie Sembrada');
+    // Usar getF para matching case-insensitive de la columna de fertilizante
     const fertPRaw = getF(r, 'KG FERT P NECESARIOS');
     const fertP = fertPRaw ? (parseFloat(String(fertPRaw).replace(',','.')) || null) : null;
 
+    // Elegir columna de semilla según el cultivo de la fila (siempre por fila, independiente del modo global)
     const esBolsas = cultivoUsaBolsas(r['Cultivo']);
     const semVal = esBolsas
       ? vn('NRO BOLSAS NECESARIAS Mz/Gi')
@@ -1333,10 +1472,7 @@ function renderPlanSiembra() {
       ? (esBolsas ? Math.round(semVal).toLocaleString('es-AR') : fmtHa(semVal))
       : '—';
 
-    const tr = document.createElement('tr');
-    tr.style.cursor = 'pointer';
-    tr.onclick = () => openDrawer(r, idx);
-    tr.innerHTML = `
+    return `<tr>
       <td class="num" style="font-weight:700;color:var(--text)">${vs('Orden de Siembra')}</td>
       <td style="font-weight:600">${r['Campo']||'—'}</td>
       <td style="font-family:'IBM Plex Mono',monospace;font-size:12px">${r['Lote']||'—'}</td>
@@ -1348,23 +1484,23 @@ function renderPlanSiembra() {
       <td class="num">${vs('Densidad siembra Recomendada')}</td>
       <td class="num">${vs('Dosis Fert. P Producto 1')}</td>
       <td class="num">${fertP ? fmtHa(fertP) : '—'}</td>
-      <td class="num">${semDisplay}</td>`;
-    tbody.appendChild(tr);
+      <td class="num">${semDisplay}</td>
+    </tr>`;
   });
 
   const totSemDisplay = usaBolsas
     ? Math.round(totSemilla).toLocaleString('es-AR')
     : fmtHa(totSemilla);
 
-  const totRow = document.createElement('tr');
-  totRow.className = 'total-row';
-  totRow.innerHTML = `
+  rows.push(`<tr class="total-row">
     <td colspan="6" style="font-weight:700">TOTAL</td>
     <td class="num grand-total">${fmtHa(totSup)}</td>
     <td></td><td></td><td></td>
     <td class="num grand-total">${fmtHa(totFertP)}</td>
-    <td class="num grand-total">${totSemDisplay}</td>`;
-  tbody.appendChild(totRow);
+    <td class="num grand-total">${totSemDisplay}</td>
+  </tr>`);
+
+  tbody.innerHTML = rows.join('');
 }
 
 // ── FERTILIZANTE TOTAL ────────────────────────────────────────────────
@@ -1392,9 +1528,7 @@ function renderFertilizante() {
     tbody.innerHTML = '<tr><td colspan="10" style="text-align:center;padding:40px;color:var(--text3)">Sin resultados</td></tr>';
   } else {
     let totSup = 0, totFertP = 0;
-    tbody.innerHTML = '';
-    data.forEach(r => {
-      const idx = allData.indexOf(r);
+    tbody.innerHTML = data.map(r => {
       const sup    = parseSup(r['Superficie Sembrada']);
       const fertP  = pn(getF(r, 'KG FERT P NECESARIOS')) ?? 0;
       const pVal   = r['P'] && hasVal(r['P']) ? r['P'] : '—';
@@ -1402,10 +1536,7 @@ function renderFertilizante() {
       const pClass = pNum === null ? '' : pNum < 10 ? 'style="color:#ef4444;font-weight:700"' : pNum < 20 ? 'style="color:#f59e0b;font-weight:600"' : 'style="color:var(--green);font-weight:600"';
       totSup   += sup;
       totFertP += fertP;
-      const tr = document.createElement('tr');
-      tr.style.cursor = 'pointer';
-      tr.onclick = () => openDrawer(r, idx);
-      tr.innerHTML = `
+      return `<tr>
         <td style="font-weight:600">${r['Campo']||'—'}</td>
         <td style="font-family:'IBM Plex Mono',monospace;font-size:12px">${r['Lote']||'—'}</td>
         <td style="max-width:120px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap">${r['Ambiente Regional']||'—'}</td>
@@ -1415,17 +1546,14 @@ function renderFertilizante() {
         <td class="num" ${pClass}>${pVal}</td>
         <td class="num">${r['Año análisis P']||'—'}</td>
         <td class="num">${r['Dosis Fert. P Producto 1']||'—'}</td>
-        <td class="num" style="font-weight:600">${fertP ? fmtHa(fertP) : '—'}</td>`;
-      tbody.appendChild(tr);
-    });
-    const totRow = document.createElement('tr');
-    totRow.className = 'total-row';
-    totRow.innerHTML = `
+        <td class="num" style="font-weight:600">${fertP ? fmtHa(fertP) : '—'}</td>
+      </tr>`;
+    }).join('') + `<tr class="total-row">
       <td colspan="5" style="font-weight:700">TOTAL</td>
       <td class="num grand-total">${fmtHa(totSup)}</td>
       <td></td><td></td><td></td>
-      <td class="num grand-total">${fmtHa(totFertP)}</td>`;
-    tbody.appendChild(totRow);
+      <td class="num grand-total">${fmtHa(totFertP)}</td>
+    </tr>`;
   }
 
   // ── Resumen por Fertilizante Fosforado ────────────────────────────
@@ -1482,6 +1610,27 @@ function sortRecN(col) {
   renderRecN();
 }
 
+// Parsea número en formato argentino: punto = miles, coma = decimal
+// Ej: "1.500" → 1500, "1.500,25" → 1500.25, "1,5" → 1.5
+function pn(v) {
+  if (v === null || v === undefined) return null;
+  let s = String(v).trim();
+  if (!s) return null;
+  if (s.includes(',') && s.includes('.')) {
+    // Ambos: punto = miles, coma = decimal
+    s = s.replace(/\./g, '').replace(',', '.');
+  } else if (s.includes(',')) {
+    // Solo coma = decimal
+    s = s.replace(',', '.');
+  } else if (/^\d{1,3}(\.\d{3})+$/.test(s)) {
+    // Solo punto con patrón X.YYY → separador de miles
+    s = s.replace(/\./g, '');
+  }
+  // Si solo tiene punto como decimal (ej "1.5"), se deja igual
+  const n = parseFloat(s);
+  return isNaN(n) ? null : n;
+}
+
 // Promedio ponderado: suma(val * peso) / suma(peso), solo para pares donde ambos son válidos
 function wAvg(pairs) {
   let sumProd = 0, sumPeso = 0;
@@ -1529,9 +1678,7 @@ function renderRecN() {
   };
   const nd = v => v !== null ? fmtHa(v) : '—';
 
-  tbody.innerHTML = '';
-  data.forEach(r => {
-    const origIdx = allData.indexOf(r);
+  tbody.innerHTML = data.map(r => {
     const sup      = parseSup(r['Superficie Sembrada']);
     const nSuelo   = pn(getF(r, 'Nitrogeno suelo (0-60 cm)', 'NitrogenoSuelo'));
     const nObj     = pn(getF(r, 'Nitrogeno Objetivo', 'NitrogenoObjetivo'));
@@ -1548,10 +1695,7 @@ function renderRecN() {
       wpPairs.dosRecom.push([dosRecom, sup]);
       wpPairs.nAlc.push([nAlc,        sup]);
     }
-    const tr = document.createElement('tr');
-    tr.style.cursor = 'pointer';
-    tr.onclick = () => openDrawer(r, origIdx);
-    tr.innerHTML = `
+    return `<tr>
       <td style="font-weight:600">${r['Campo']||'—'}</td>
       <td style="font-family:'IBM Plex Mono',monospace;font-size:12px">${r['Lote']||'—'}</td>
       <td style="max-width:115px;overflow:hidden;text-overflow:ellipsis;white-space:nowrap" title="${(r['Ambiente Regional']||'').replace(/"/g,'&quot;')}">${r['Ambiente Regional']||'—'}</td>
@@ -1565,9 +1709,9 @@ function renderRecN() {
       <td class="num">${nd(dosCalc)}</td>
       <td class="num">${nd(dosRecom)}</td>
       <td class="num">${nd(nAlc)}</td>
-      <td class="num" style="font-weight:600">${kgFert !== null ? fmtHa(kgFert) : '—'}</td>`;
-    tbody.appendChild(tr);
-  });
+      <td class="num" style="font-weight:600">${kgFert !== null ? fmtHa(kgFert) : '—'}</td>
+    </tr>`;
+  }).join('');
 
   const dosisPromPond = totSup > 0 ? totKgFert / totSup : null;
   tbody.innerHTML += `<tr class="total-row">
@@ -2252,11 +2396,563 @@ function cultivoTag(c) {
 }
 function fmt(val) {
   if (!val) return '';
-  const n = pn(val);
-  return n === null ? String(val) : n.toLocaleString('es-AR');
+  const n = parseFloat(String(val).replace(',','.'));
+  return isNaN(n) ? val : n.toLocaleString('es-AR');
 }
 
-document.addEventListener('keydown', e => { if(e.key==='Escape') closeDrawer(); });
+document.addEventListener('keydown', e => { if(e.key==='Escape') { closeDrawer(); monCloseModal(); } });
+
+// ── MONITOREO INSECTOS ────────────────────────────────────────────────
+const MON_CSV = 'https://docs.google.com/spreadsheets/d/e/2PACX-1vTHHByh3mYfSKCYUj01eUDVH8cvbzkVLpQjxAEiji7ma6wOG0mJ6W9qlIgNPm_dmzbCuT19GQKTgvll/pub?gid=1880543863&single=true&output=csv';
+const MON_PREFS_KEY = 'soja_prefs_v2';
+
+const MON_UMBRAL = {
+  me_gt:{R12:15,R34:15,R5:15,R67:15,R67s:15},
+  me_lt:{R12:15,R34:15,R5:15,R67:15,R67s:15},
+  gp:   {R12:3, R34:3, R5:3, R67:3, R67s:3 },
+  thecla:{R12:3,R34:3, R5:3, R67:3, R67s:3 },
+  bol:  {R12:3, R34:3, R5:3, R67:3, R67s:3 },
+  ch_aa:{R12:null,R34:.9, R5:1.4,R67:4.3, R67s:1.4},
+  ch_ve:{R12:null,R34:1.4,R5:2.9,R67:7.1, R67s:2.9},
+  ch_cu:{R12:null,R34:2.1,R5:4.3,R67:10.7,R67s:4.3},
+  ch_alq:{R12:null,R34:2.1,R5:4.3,R67:10.7,R67s:4.3},
+};
+
+function monEfGroup(ef, destino) {
+  const e = (ef || '').toUpperCase();
+  if (e === 'R1' || e === 'R2') return 'R12';
+  if (e === 'R3' || e === 'R4') return 'R34';
+  if (e === 'R5') return 'R5';
+  if (e === 'R6' || e === 'R7') return (destino || '').toLowerCase().includes('semilla') ? 'R67s' : 'R67';
+  return 'R5';
+}
+function monCalcPct(v, ins, ef, dest) {
+  const g = monEfGroup(ef, dest), u = MON_UMBRAL[ins][g];
+  if (u === null) return null;
+  return Math.round((v / u) * 100);
+}
+
+// ── State ──
+let monSites = [], monRecorridas = [];
+let monPrefs = { lote_destino:{}, lote_date:{}, global_date:'' };
+let monCurrentSubTab = 'ult';
+let monUltSort = { col:'fecha', dir:-1 }, monAcumSort = { col:'acum', dir:-1 };
+let monExpandedAcum = {};
+let monDataLoaded = false;
+
+function monLoadPrefs() {
+  try { monPrefs = JSON.parse(localStorage.getItem(MON_PREFS_KEY) || '{}'); } catch(e) {}
+  monPrefs.lote_destino = monPrefs.lote_destino || {};
+  monPrefs.lote_date    = monPrefs.lote_date    || {};
+  monPrefs.global_date  = monPrefs.global_date  || '';
+}
+function monSavePrefs() { localStorage.setItem(MON_PREFS_KEY, JSON.stringify(monPrefs)); }
+
+// ── CSV Load ──
+function loadMonData() {
+  if (monDataLoaded) return;
+  document.getElementById('mon-hdr-stats').textContent = 'Cargando datos…';
+  Papa.parse(MON_CSV, {
+    download: true, header: false, skipEmptyLines: true,
+    complete(res) {
+      if (!res.data?.length) {
+        document.getElementById('mon-hdr-stats').textContent = 'No se encontraron datos.';
+        return;
+      }
+      const rows = res.data.slice(1); // skip header row
+      const n = s => { const v = (s || '').replace(',', '.'); return parseFloat(v) || 0; };
+      monSites = rows.flatMap(p => {
+        if (p.length < 34) return [];
+        const ar = (p[33] || '').toUpperCase();
+        const row = {
+          resp: p[0], fecha: p[2], cultivo: p[4], empresa: p[5], campo: p[6],
+          lote: p[7], destino: p[8] || 'Cosecha', ef: p[10] || p[9] || '',
+          sitio: parseInt(p[11]) || 1,
+          me_gt_m2: n(p[24]), me_lt_m2: n(p[25]), gp_m2: n(p[26]),
+          bol_m2: n(p[27]), thecla_m2: n(p[28]),
+          ch_aa_m2: n(p[29]), ch_ve_m2: n(p[30]), ch_cu_m2: n(p[31]), ch_alq_m2: n(p[32]),
+          aran: ar === 'SI' ? 1 : ar === 'NO' ? 0 : n(p[33]) > 0 ? 1 : 0
+        };
+        return (row.lote && row.fecha) ? [row] : [];
+      });
+      monComputeRecorridas();
+      monPopulateAllFilters();
+      monUpdateStats();
+      monSwitchSubTab('ult');
+      monDataLoaded = true;
+    },
+    error(err) {
+      document.getElementById('mon-hdr-stats').textContent = 'Error al cargar: ' + err.message;
+    }
+  });
+}
+
+// ── Compute ──
+function monDateVal(d) {
+  if (!d) return 0;
+  const p = d.split('/');
+  if (p.length !== 3) return 0;
+  return parseInt(p[2]) * 10000 + parseInt(p[1]) * 100 + parseInt(p[0]);
+}
+
+function monComputeRecorridas() {
+  const map = {};
+  for (const s of monSites) {
+    const k = s.cultivo + '||' + s.lote + '||' + s.fecha;
+    if (!map[k]) map[k] = { cultivo:s.cultivo, lote:s.lote, fecha:s.fecha,
+      empresa:s.empresa, campo:s.campo, ef:s.ef, destino:s.destino, resp:s.resp, sites:[] };
+    map[k].sites.push(s);
+    map[k].ef = s.ef; map[k].resp = s.resp;
+  }
+  monRecorridas = Object.values(map).map(r => {
+    const ss = r.sites, n = ss.length;
+    const avg = k => ss.reduce((a, s) => a + (s[k] || 0), 0) / n;
+    const dest = monPrefs.lote_destino[r.lote] || r.destino || 'Cosecha';
+    const ef = r.ef;
+    const me_gt_m2=avg('me_gt_m2'), me_lt_m2=avg('me_lt_m2');
+    const gp_m2=avg('gp_m2'), bol_m2=avg('bol_m2'), thecla_m2=avg('thecla_m2');
+    const ch_aa_m2=avg('ch_aa_m2'), ch_ve_m2=avg('ch_ve_m2');
+    const ch_cu_m2=avg('ch_cu_m2'), ch_alq_m2=avg('ch_alq_m2');
+    const pChAa=monCalcPct(ch_aa_m2,'ch_aa',ef,dest);
+    const pChVe=monCalcPct(ch_ve_m2,'ch_ve',ef,dest);
+    const pChCu=monCalcPct(ch_cu_m2,'ch_cu',ef,dest);
+    const pChAlq=monCalcPct(ch_alq_m2,'ch_alq',ef,dest);
+    const g = monEfGroup(ef, dest);
+    const chinche = g === 'R12' ? null : (pChAa||0)+(pChVe||0)+(pChCu||0)+(pChAlq||0);
+    return { ...r, destino:dest, dateVal:monDateVal(r.fecha),
+      me_gt:monCalcPct(me_gt_m2,'me_gt',ef,dest),
+      me_lt:monCalcPct(me_lt_m2,'me_lt',ef,dest),
+      gp:monCalcPct(gp_m2,'gp',ef,dest),
+      bol:monCalcPct(bol_m2,'bol',ef,dest),
+      thecla:monCalcPct(thecla_m2,'thecla',ef,dest),
+      ch_aa:pChAa, ch_ve:pChVe, ch_cu:pChCu, ch_alq:pChAlq, chinche,
+      aran:Math.round(avg('aran')*100),
+      me_gt_m2,me_lt_m2,gp_m2,bol_m2,thecla_m2,ch_aa_m2,ch_ve_m2,ch_cu_m2,ch_alq_m2 };
+  });
+  monRecorridas.sort((a, b) => b.dateVal - a.dateVal);
+}
+
+// ── Helpers ──
+function monV(id) { const e = document.getElementById(id); return e ? e.value : ''; }
+
+function monPctColor(v) {
+  if (v === null || v === undefined) return '#94a3b8';
+  if (v === 0)  return '#16a34a';
+  if (v < 50)   return '#65a30d';
+  if (v < 100)  return '#d97706';
+  return '#dc2626';
+}
+function monPctBg(v) {
+  if (v === null || v === undefined) return '#f1f5f9';
+  if (v === 0)  return '#dcfce7';
+  if (v < 50)   return '#f0fdf4';
+  if (v < 100)  return '#fef9c3';
+  return '#fee2e2';
+}
+function monPctCell(v, rec, insect) {
+  if (v === null) return '<span style="color:#94a3b8;font-size:11px">n/a</span>';
+  const k = JSON.stringify({ lote:rec.lote, fecha:rec.fecha, cultivo:rec.cultivo });
+  return `<span class="mon-pct-cell" style="color:${monPctColor(v)};background:${monPctBg(v)}"
+    onclick='monShowDetail(${JSON.stringify(k)},${JSON.stringify(insect)})'>${v}%</span>`;
+}
+function monStatusBadge(vals) {
+  const max = Math.max(...vals.filter(v => v !== null && v !== undefined).map(v => v || 0), 0);
+  if (max >= 100) return '<span class="mon-badge mon-badge-alert">⚠ EN UMBRAL</span>';
+  if (max >= 50)  return '<span class="mon-badge mon-badge-warn">● ALERTA</span>';
+  return '<span class="mon-badge mon-badge-ok">✓ OK</span>';
+}
+function monEfBadge(ef) {
+  const e = (ef || '').toUpperCase();
+  return `<span class="mon-ef mon-ef-${e}">${e}</span>`;
+}
+function monBar(lbl, pct, m2) {
+  const w = Math.min(pct || 0, 100);
+  const fc = (pct||0)>=100 ? '#dc2626' : (pct||0)>=50 ? '#d97706' : '#16a34a';
+  return `<div class="mon-bar-wrap">
+    <div class="mon-bar-label">${lbl}</div>
+    <div class="mon-bar-track"><div class="mon-bar-fill" style="width:${w}%;background:${fc}"></div></div>
+    <div class="mon-bar-val" style="color:${monPctColor(pct)}">${pct!==null?pct+'%':'n/a'}</div>
+  </div><div class="mon-bar-sub">${(m2||0).toFixed(2)} ind/m²</div>`;
+}
+
+// ── Filters ──
+function monGetFiltered() {
+  const fE=monV('mon-f-empresa'), fCa=monV('mon-f-campo'), fL=monV('mon-f-lote');
+  const fCu=monV('mon-f-cultivo'), fR=monV('mon-f-resp'), fEF=monV('mon-f-ef');
+  const fFrom=monV('mon-f-from'), fTo=monV('mon-f-to');
+  return monRecorridas.filter(r => {
+    if (fE  && r.empresa !== fE)  return false;
+    if (fCa && r.campo   !== fCa) return false;
+    if (fL  && r.lote    !== fL)  return false;
+    if (fCu && r.cultivo !== fCu) return false;
+    if (fR  && r.resp    !== fR)  return false;
+    if (fEF && r.ef      !== fEF) return false;
+    if (fFrom){ const dv=monDateVal(fFrom.split('-').reverse().join('/')); if(r.dateVal<dv) return false; }
+    if (fTo)  { const dv=monDateVal(fTo.split('-').reverse().join('/'));   if(r.dateVal>dv) return false; }
+    return true;
+  });
+}
+
+function monCascadeFrom(from) {
+  const fE=monV('mon-f-empresa'), fCa=monV('mon-f-campo'), fL=monV('mon-f-lote');
+  const monPool = (filters) => monRecorridas.filter(r => {
+    for (const [k,v] of Object.entries(filters)) if (v && r[k] !== v) return false;
+    return true;
+  });
+  if (from === 'empresa' || from === 'reset') {
+    const campos = [...new Set(monPool({empresa:fE}).map(r=>r.campo).filter(Boolean))].sort();
+    monRefill('mon-f-campo', campos, from==='reset'?'':fCa);
+  }
+  const fCa2 = monV('mon-f-campo');
+  if (from === 'empresa' || from === 'campo' || from === 'reset') {
+    const lotes = [...new Set(monPool({empresa:fE,campo:fCa2}).map(r=>r.lote).filter(Boolean))].sort();
+    monRefill('mon-f-lote', lotes, from==='reset'?'':fL);
+  }
+  const fL2 = monV('mon-f-lote');
+  const downstream = monPool({empresa:fE, campo:fCa2, lote:fL2});
+  monRefill('mon-f-cultivo',[...new Set(downstream.map(r=>r.cultivo).filter(Boolean))].sort(), from==='reset'?'':monV('mon-f-cultivo'));
+  monRefill('mon-f-ef',     [...new Set(downstream.map(r=>r.ef).filter(Boolean))].sort((a,b)=>a.localeCompare(b,undefined,{numeric:true})), from==='reset'?'':monV('mon-f-ef'));
+  monRefill('mon-f-resp',   [...new Set(downstream.map(r=>r.resp).filter(Boolean))].sort(), from==='reset'?'':monV('mon-f-resp'));
+  monApplyFilters();
+}
+
+function monRefill(id, opts, keepVal) {
+  const el = document.getElementById(id); if (!el) return;
+  const first = el.options[0];
+  el.innerHTML = ''; el.appendChild(first);
+  opts.forEach(v => { const o=document.createElement('option'); o.value=v; o.textContent=v; el.appendChild(o); });
+  el.value = opts.includes(keepVal) ? keepVal : '';
+}
+
+function monPopulateAllFilters() {
+  const all = k => [...new Set(monRecorridas.map(r=>r[k]).filter(Boolean))].sort((a,b)=>
+    typeof a==='string' ? a.localeCompare(b,undefined,{numeric:true}) : (a-b));
+  monRefill('mon-f-empresa', all('empresa'), '');
+  monRefill('mon-f-campo',   all('campo'),   '');
+  monRefill('mon-f-lote',    all('lote'),    '');
+  monRefill('mon-f-cultivo', all('cultivo'), '');
+  monRefill('mon-f-ef',      all('ef'),      '');
+  monRefill('mon-f-resp',    all('resp'),    '');
+}
+
+function monResetFilters() {
+  ['mon-f-empresa','mon-f-campo','mon-f-lote','mon-f-cultivo','mon-f-ef','mon-f-resp'].forEach(id=>{
+    const el=document.getElementById(id); if(el) el.value='';
+  });
+  ['mon-f-from','mon-f-to'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
+  monPopulateAllFilters();
+  monApplyFilters();
+}
+
+function monApplyFilters() {
+  if (monCurrentSubTab === 'ult') monRenderUlt();
+  else monRenderAcum();
+}
+
+function monUpdateStats() {
+  const nL = new Set(monRecorridas.map(r=>r.lote)).size;
+  const nE = new Set(monRecorridas.map(r=>r.empresa).filter(Boolean)).size;
+  const dvs = monRecorridas.map(r=>r.dateVal).filter(Boolean);
+  const fmt = v => v ? `${String(v%100).padStart(2,'0')}/${String(Math.floor(v/100)%100).padStart(2,'0')}/${Math.floor(v/10000)}` : '';
+  document.getElementById('mon-hdr-stats').textContent =
+    `${nL} lotes · ${nE} empresas · ${monRecorridas.length} recorridas · ${fmt(Math.min(...dvs))}–${fmt(Math.max(...dvs))}`;
+}
+
+// ── Render Último ──
+function monRenderUlt() {
+  const filtered = monGetFiltered();
+  const latest = {};
+  for (const r of filtered) {
+    const k = r.cultivo+'||'+r.lote;
+    if (!latest[k] || r.dateVal > latest[k].dateVal) latest[k] = r;
+  }
+  let rows = Object.values(latest);
+  rows.sort((a, b) => {
+    let va = a[monUltSort.col], vb = b[monUltSort.col];
+    if (monUltSort.col === 'fecha') { va = a.dateVal; vb = b.dateVal; }
+    if (typeof va === 'string') return monUltSort.dir * (va||'').localeCompare(vb||'');
+    return monUltSort.dir * ((va||0) - (vb||0));
+  });
+  const tbody = document.getElementById('mon-tbody-ult');
+  if (!rows.length) { tbody.innerHTML='<tr><td colspan="16" class="mon-no-data">Sin datos con los filtros actuales</td></tr>'; return; }
+  tbody.innerHTML = rows.map(r => {
+    const dest = monPrefs.lote_destino[r.lote] || r.destino || 'Cosecha';
+    const le = r.lote.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+    return `<tr>
+      <td style="text-align:left">${r.empresa||'—'}</td>
+      <td style="text-align:left">${r.campo||'—'}</td>
+      <td style="text-align:left;font-weight:600">${r.lote}</td>
+      <td>${r.cultivo}</td><td style="font-family:'IBM Plex Mono',monospace;font-size:12px">${r.fecha}</td>
+      <td>${monEfBadge(r.ef)}</td><td>${r.resp||'—'}</td>
+      <td onclick="event.stopPropagation()">
+        <select class="mon-destino-sel" onchange="monSetDestino('${le}',this.value,false)">
+          <option${dest==='Cosecha'?' selected':''}>Cosecha</option>
+          <option${dest==='Semilla'?' selected':''}>Semilla</option>
+        </select></td>
+      <td class="mon-col-sep">${monPctCell(r.me_gt,r,'me')}</td>
+      <td>${monPctCell(r.me_lt,r,'me')}</td>
+      <td>${monPctCell(r.gp,r,'gp')}</td>
+      <td>${monPctCell(r.thecla,r,'thecla')}</td>
+      <td>${monPctCell(r.bol,r,'bol')}</td>
+      <td class="mon-col-sep">${monPctCell(r.chinche,r,'chinche')}</td>
+      <td class="mon-col-sep">${monPctCell(r.aran,r,'aran')}</td>
+      <td>${monStatusBadge([r.me_gt,r.me_lt,r.gp,r.bol,r.thecla,r.chinche,r.aran])}</td>
+    </tr>`;
+  }).join('');
+}
+
+// Sort listeners ULT
+document.querySelectorAll('#mon-tbl-ult thead th[data-mon-col]').forEach(th => {
+  th.addEventListener('click', () => {
+    const c = th.dataset.monCol;
+    if (monUltSort.col === c) monUltSort.dir *= -1; else { monUltSort.col=c; monUltSort.dir=-1; }
+    document.querySelectorAll('#mon-tbl-ult thead th').forEach(h=>h.classList.remove('sort-asc','sort-desc'));
+    th.classList.add(monUltSort.dir===1?'sort-asc':'sort-desc');
+    monRenderUlt();
+  });
+});
+
+// ── Render Acum ──
+function monComputeAcumData() {
+  const filtered = monGetFiltered();
+  const EF_ACUM = ['R3','R4','R5','R6','R7'];
+  const loteMap = {};
+  for (const r of filtered) {
+    const k = r.cultivo+'||'+r.lote;
+    if (!loteMap[k]) loteMap[k] = { cultivo:r.cultivo, lote:r.lote, empresa:r.empresa, campo:r.campo, resp:r.resp, recs:[] };
+    loteMap[k].recs.push(r);
+  }
+  const globalDate = monPrefs.global_date || '';
+  return Object.values(loteMap).map(L => {
+    const loteDate = monPrefs.lote_date[L.lote] || globalDate || '';
+    const loteDV = loteDate ? monDateVal(loteDate.split('-').reverse().join('/')) : 0;
+    const dest = monPrefs.lote_destino[L.lote] || L.recs[0]?.destino || 'Cosecha';
+    const valid = L.recs.filter(r => (!loteDV||r.dateVal>=loteDV) && EF_ACUM.includes(r.ef.toUpperCase()));
+    const maxByEF = {};
+    for (const r of valid) {
+      const ef=r.ef.toUpperCase(), v=r.chinche;
+      if (v!==null && v!==undefined && (maxByEF[ef]===undefined||v>maxByEF[ef].val))
+        maxByEF[ef]={val:v,fecha:r.fecha};
+    }
+    const acum = Math.round(Object.values(maxByEF).reduce((s,x)=>s+x.val,0));
+    return {...L, destino:dest, loteDate, maxByEF, acum};
+  });
+}
+
+function monRenderAcum() {
+  let data = monComputeAcumData().map((d,i)=>({...d,_i:i}));
+  data.sort((a,b)=>{
+    const va=a[monAcumSort.col]||'', vb=b[monAcumSort.col]||'';
+    const c = typeof va==='string' ? va.localeCompare(vb) : (va-vb);
+    return c!==0 ? monAcumSort.dir*c : a._i-b._i;
+  });
+  const tbody = document.getElementById('mon-tbody-acum');
+  if (!data.length) { tbody.innerHTML='<tr><td colspan="8" class="mon-no-data">Sin datos</td></tr>'; return; }
+  const rows = [];
+  for (const L of data) {
+    const k = L.cultivo+'||'+L.lote, exp=!!monExpandedAcum[k], dest=L.destino;
+    const le = L.lote.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+    const ke = k.replace(/\\/g,'\\\\').replace(/'/g,"\\'");
+    rows.push(`<tr style="cursor:pointer" onclick="monToggleAcum('${ke}')">
+      <td style="text-align:left">${L.empresa||'—'}</td>
+      <td style="text-align:left">${L.campo||'—'}</td>
+      <td style="text-align:left;font-weight:600">${exp?'▾':'▸'} ${L.lote}</td>
+      <td>${L.cultivo}</td>
+      <td onclick="event.stopPropagation()">
+        <select class="mon-destino-sel" onchange="monSetDestino('${le}',this.value,true)">
+          <option${dest==='Cosecha'?' selected':''}>Cosecha</option>
+          <option${dest==='Semilla'?' selected':''}>Semilla</option>
+        </select></td>
+      <td onclick="event.stopPropagation()">
+        <input type="date" value="${L.loteDate}"
+          style="font-size:11px;padding:2px 5px;border:1px solid var(--border);border-radius:4px;font-family:inherit;color:var(--text)"
+          onchange="monSetLoteDate('${le}',this.value)">
+      </td>
+      <td><span class="mon-pct-cell" style="color:${monPctColor(L.acum)};background:${monPctBg(L.acum)}">${L.acum}%</span></td>
+      <td>${monStatusBadge([L.acum])}</td>
+    </tr>`);
+    if (exp) {
+      const EFS = ['R3','R4','R5','R6','R7'];
+      const det = EFS.map(ef => {
+        const m = L.maxByEF[ef];
+        const rowClick = m ? `onclick="monShowEFDetail('${L.lote.replace(/'/g,"\'")}','${L.cultivo}','${ef}')" style="cursor:pointer"` : '';
+        return `<tr ${rowClick}>
+          <td>${monEfBadge(ef)}</td>
+          <td style="font-family:'IBM Plex Mono',monospace;font-size:11px">${m?m.fecha:'—'}</td>
+          <td>${m?`<b>${m.val}%</b>`:'—'}</td>
+          <td style="color:#f59e0b">${m?'★':''}</td>
+          <td style="font-size:10px;color:var(--text3)">${m?'🔍':''}</td>
+        </tr>`;
+      }).join('');
+      rows.push(`<tr class="mon-expand-row"><td colspan="8"><div class="mon-expand-content">
+        <b style="font-size:12px;display:block;margin-bottom:8px">
+          Máximos por estadio — ${L.lote}
+          <span style="font-weight:400;color:var(--text2);font-size:11px;margin-left:8px">Clic en estadio para ver detalle</span>
+        </b>
+        <table class="mon-history-tbl">
+          <tr><th>EF</th><th>Fecha máx.</th><th>% Umbral</th><th></th><th></th></tr>
+          ${det}
+          <tr style="background:var(--green-bg);font-weight:700">
+            <td colspan="2" style="text-align:left">ACUMULADO</td><td>${L.acum}%</td>
+            <td>${L.acum>=100?'⚠':L.acum>=50?'●':'✓'}</td><td></td>
+          </tr>
+        </table>
+      </div></td></tr>`);
+    }
+  }
+  tbody.innerHTML = rows.join('');
+}
+
+// Sort listeners ACUM
+document.querySelectorAll('#mon-tbl-acum thead th[data-mon-col]').forEach(th => {
+  th.addEventListener('click', () => {
+    const c = th.dataset.monCol;
+    if (monAcumSort.col === c) monAcumSort.dir *= -1; else { monAcumSort.col=c; monAcumSort.dir=-1; }
+    document.querySelectorAll('#mon-tbl-acum thead th').forEach(h=>h.classList.remove('sort-asc','sort-desc'));
+    th.classList.add(monAcumSort.dir===1?'sort-asc':'sort-desc');
+    monRenderAcum();
+  });
+});
+
+function monToggleAcum(k) { monExpandedAcum[k] = !monExpandedAcum[k]; monRenderAcum(); }
+
+// ── Prefs setters ──
+function monSetDestino(lote, dest, acumTab) {
+  monPrefs.lote_destino[lote] = dest;
+  monSavePrefs();
+  monComputeRecorridas();
+  if (acumTab) monRenderAcum(); else monRenderUlt();
+}
+function monSetLoteDate(lote, date) {
+  monPrefs.lote_date[lote] = date;
+  monSavePrefs();
+  monRenderAcum();
+}
+function monGlobalDateChanged() {
+  const d = document.getElementById('mon-acum-date-global').value;
+  monPrefs.global_date = d;
+  Object.keys(monPrefs.lote_date).forEach(k => delete monPrefs.lote_date[k]);
+  monSavePrefs();
+  monExpandedAcum = {};
+  monRenderAcum();
+}
+
+// ── Modal ──
+function monShowDetail(keyStr, insect) {
+  const key = JSON.parse(keyStr);
+  const rec = monRecorridas.find(r => r.lote===key.lote && r.fecha===key.fecha && r.cultivo===key.cultivo);
+  if (!rec) return;
+  document.getElementById('mon-modal-title').textContent = `${rec.lote} · ${rec.fecha} · ${rec.ef} · ${rec.cultivo}`;
+  let html = `<div style="margin-bottom:12px;font-size:12px;color:var(--text2)">
+    <b>Empresa:</b> ${rec.empresa||'—'} &nbsp;·&nbsp; <b>Campo:</b> ${rec.campo||'—'} &nbsp;·&nbsp;
+    <b>Responsable:</b> ${rec.resp||'—'} &nbsp;·&nbsp; <b>Destino:</b> ${rec.destino||'—'} &nbsp;·&nbsp;
+    <b>Sitios:</b> ${rec.sites.length}</div>`;
+  if (insect === 'chinche') {
+    html += '<h4 style="font-size:13px;margin-bottom:10px;color:var(--text)">Desglose por especie de chinche</h4>';
+    html += monBar('Ch. de la Alfalfa', rec.ch_aa, rec.ch_aa_m2);
+    html += monBar('Ch. Verde',         rec.ch_ve, rec.ch_ve_m2);
+    html += monBar('Ch. de los Cuernos',rec.ch_cu, rec.ch_cu_m2);
+    html += monBar('Ch. Alquiche',      rec.ch_alq,rec.ch_alq_m2);
+    html += `<div style="border-top:1px solid var(--border);padding-top:8px;font-weight:600;font-size:13px;margin-top:8px">
+      Total chinche: <span style="color:${monPctColor(rec.chinche)}">${rec.chinche!==null?rec.chinche+'%':'n/a'}</span></div>`;
+  } else {
+    html += '<h4 style="font-size:13px;margin-bottom:10px;color:var(--text)">Isocas</h4>';
+    html += monBar('Me &gt;1,5 cm', rec.me_gt, rec.me_gt_m2);
+    html += monBar('Me &lt;1,5 cm', rec.me_lt, rec.me_lt_m2);
+    html += monBar('Gata Peluda',   rec.gp,    rec.gp_m2);
+    html += monBar('Thecla',        rec.thecla,rec.thecla_m2);
+    html += monBar('Bolillera',     rec.bol,   rec.bol_m2);
+  }
+  if (rec.sites.length) {
+    html += `<h4 style="font-size:12px;margin:14px 0 8px;border-top:1px solid var(--border);padding-top:10px;color:var(--text)">Sitios (ind/m²)</h4>
+      <table class="mon-site-tbl"><tr>
+        <th>Sitio</th><th>Me&gt;1,5</th><th>Me&lt;1,5</th><th>GP</th><th>Bol</th><th>Thecla</th>
+        <th>Ch aa</th><th>Ch ve</th><th>Ch cu</th><th>Ch alq</th><th>Arañ</th>
+      </tr>`;
+    for (const s of [...rec.sites].sort((a,b)=>a.sitio-b.sitio)) {
+      html += `<tr><td><b>${s.sitio}</b></td>
+        <td>${s.me_gt_m2.toFixed(2)}</td><td>${s.me_lt_m2.toFixed(2)}</td>
+        <td>${s.gp_m2.toFixed(2)}</td><td>${s.bol_m2.toFixed(2)}</td><td>${s.thecla_m2.toFixed(2)}</td>
+        <td>${s.ch_aa_m2.toFixed(2)}</td><td>${s.ch_ve_m2.toFixed(2)}</td>
+        <td>${s.ch_cu_m2.toFixed(2)}</td><td>${s.ch_alq_m2.toFixed(2)}</td>
+        <td>${s.aran?'✓':'–'}</td></tr>`;
+    }
+    html += '</table>';
+  }
+  document.getElementById('mon-modal-body').innerHTML = html;
+  document.getElementById('mon-modal-overlay').style.display = 'flex';
+}
+
+function monShowEFDetail(lote, cultivo, ef) {
+  const globalDate = monPrefs.global_date || '';
+  const loteDate = monPrefs.lote_date[lote] || globalDate || '';
+  const loteDV = loteDate ? monDateVal(loteDate.split('-').reverse().join('/')) : 0;
+  const recs = monRecorridas.filter(r =>
+    r.lote===lote && r.cultivo===cultivo && r.ef.toUpperCase()===ef && (!loteDV||r.dateVal>=loteDV)
+  ).sort((a,b) => b.dateVal - a.dateVal);
+  if (!recs.length) return;
+  const acumData = monComputeAcumData();
+  const L = acumData.find(d => d.lote===lote && d.cultivo===cultivo);
+  const starFecha = L && L.maxByEF[ef] ? L.maxByEF[ef].fecha : '';
+  document.getElementById('mon-modal-title').innerHTML =
+    `${lote} · ${monEfBadge(ef)} · ${cultivo} — ${recs.length} registro${recs.length!==1?'s':''}`;
+  let html = '';
+  for (const r of recs) {
+    const isStar = r.fecha === starFecha;
+    html += `<div style="margin-bottom:16px;padding:12px;border-radius:8px;
+      background:${isStar?'#fffbeb':'var(--surface2)'};border:1px solid ${isStar?'#fde68a':'var(--border)'}">
+      <div style="display:flex;align-items:center;gap:8px;margin-bottom:10px">
+        <span style="font-weight:600;font-size:13px;color:var(--text)">${r.fecha}</span>
+        ${isStar?'<span style="color:#f59e0b;font-size:13px">★ máximo de este estadio</span>':''}
+        <span style="margin-left:auto;font-size:11px;color:var(--text2)">${r.resp||'—'} · ${r.sites.length} sitio${r.sites.length!==1?'s':''}</span>
+      </div>
+      <div style="display:grid;grid-template-columns:1fr 1fr;gap:0 16px">
+        ${monBar('Ch. de la Alfalfa',r.ch_aa,r.ch_aa_m2)}
+        ${monBar('Ch. Verde',r.ch_ve,r.ch_ve_m2)}
+        ${monBar('Ch. de los Cuernos',r.ch_cu,r.ch_cu_m2)}
+        ${monBar('Ch. Alquiche',r.ch_alq,r.ch_alq_m2)}
+      </div>
+      <div style="margin-top:8px;font-weight:600;font-size:13px;border-top:1px solid var(--border);padding-top:8px;color:var(--text)">
+        Total chinche: <span style="color:${monPctColor(r.chinche)}">${r.chinche!==null?r.chinche+'%':'n/a'}</span>
+      </div>
+    </div>`;
+  }
+  document.getElementById('mon-modal-body').innerHTML = html;
+  document.getElementById('mon-modal-overlay').style.display = 'flex';
+}
+
+function monCloseModal() { document.getElementById('mon-modal-overlay').style.display = 'none'; }
+
+// ── Sub-tab switch ──
+function monSwitchSubTab(tab) {
+  monCurrentSubTab = tab;
+  document.getElementById('mon-panel-ult').style.display  = tab==='ult'  ? 'block' : 'none';
+  document.getElementById('mon-panel-acum').style.display = tab==='acum' ? 'block' : 'none';
+  document.getElementById('mon-tab-ult').classList.toggle('active', tab==='ult');
+  document.getElementById('mon-tab-acum').classList.toggle('active', tab==='acum');
+  const efWrap = document.getElementById('mon-ef-wrap');
+  if (efWrap) efWrap.style.display = tab==='ult' ? '' : 'none';
+  const slot = document.getElementById('mon-date-filters-slot');
+  if (slot) {
+    if (tab === 'ult') {
+      if (!document.getElementById('mon-f-from')) {
+        slot.innerHTML = `<div class="mon-fsep"></div>
+          <div class="mon-fg"><label>Fecha desde</label><input type="date" id="mon-f-from" onchange="monApplyFilters()"></div>
+          <div class="mon-fg"><label>Fecha hasta</label><input type="date" id="mon-f-to" onchange="monApplyFilters()"></div>`;
+      }
+    } else {
+      slot.innerHTML = '';
+    }
+  }
+  monApplyFilters();
+}
+
+// ── Init monitoreo (called when tab opens) ──
+function initMonitoreo() {
+  monLoadPrefs();
+  loadMonData();
+}
+
 </script>
 </body>
 </html>
