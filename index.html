@@ -260,13 +260,13 @@ td.mono { font-family: 'IBM Plex Mono', monospace; font-size: 12px; }
 
 /* ── MONITOREO INSECTOS ─────────────────────────────────────────────── */
 #tab-monitoreo { padding: 0; }
-#tab-monitoreo .mon-hdr { background: var(--surface); border-bottom: 1px solid var(--border); padding: 10px 20px; display: flex; align-items: center; gap: 12px; }
+#tab-monitoreo .mon-hdr { background: var(--surface); border-bottom: 1px solid var(--border); padding: 8px 20px; display: flex; align-items: center; gap: 12px; }
 #tab-monitoreo .mon-hdr-title h3 { font-size: 14px; font-weight: 700; font-family: 'IBM Plex Sans', sans-serif; color: var(--text); }
 #tab-monitoreo .mon-hdr-title p { font-size: 11px; color: var(--text2); }
 #tab-monitoreo .mon-tabs { display: flex; background: var(--surface); border-bottom: 1px solid var(--border); padding: 0 20px; gap: 4px; }
 #tab-monitoreo .mon-sub-tab { padding: 9px 16px; border: none; background: none; cursor: pointer; font-size: 12px; font-weight: 500; color: var(--text2); border-bottom: 2px solid transparent; margin-bottom: -1px; font-family: 'IBM Plex Sans', sans-serif; transition: color .15s; }
 #tab-monitoreo .mon-sub-tab.active { color: var(--green); border-bottom-color: var(--green); }
-#tab-monitoreo .mon-filters { background: var(--surface); border-bottom: 1px solid var(--border); padding: 8px 20px; display: flex; flex-wrap: wrap; gap: 8px; align-items: flex-end; }
+#tab-monitoreo .mon-filters { background: var(--surface); border-bottom: 1px solid var(--border); padding: 6px 20px; display: flex; flex-wrap: wrap; gap: 6px; align-items: flex-end; }
 #tab-monitoreo .mon-fg { display: flex; flex-direction: column; gap: 2px; }
 #tab-monitoreo .mon-fg label { font-size: 10px; font-weight: 600; color: var(--text3); text-transform: uppercase; letter-spacing: .04em; font-family: 'IBM Plex Mono', monospace; }
 #tab-monitoreo .mon-fg select, #tab-monitoreo .mon-fg input[type="date"] { padding: 4px 8px; border: 1px solid var(--border); border-radius: 5px; font-size: 12px; font-family: 'IBM Plex Sans', sans-serif; background: var(--surface2); min-width: 130px; color: var(--text); outline: none; transition: border-color .15s; }
@@ -2615,7 +2615,7 @@ function monBar(lbl, pct, m2) {
     <div class="mon-bar-label">${lbl}</div>
     <div class="mon-bar-track"><div class="mon-bar-fill" style="width:${w}%;background:${fc}"></div></div>
     <div class="mon-bar-val" style="color:${monPctColor(pct)}">${pct!==null?pct+'%':'n/a'}</div>
-  </div><div class="mon-bar-sub">${(m2||0).toFixed(2)} ind/m²</div>`;
+  </div><div class="mon-bar-sub">${(m2||0).toFixed(2)} ind/m² · ${pct!==null ? (pct>=100?'⚠ sobre umbral':pct>=50?'cerca del umbral':'bajo umbral') : 'sin umbral en este EF'}</div>`;
 }
 
 // ── Filters ──
@@ -2693,12 +2693,13 @@ function monApplyFilters() {
 }
 
 function monUpdateStats() {
-  const nL = new Set(monRecorridas.map(r=>r.lote)).size;
-  const nE = new Set(monRecorridas.map(r=>r.empresa).filter(Boolean)).size;
-  const dvs = monRecorridas.map(r=>r.dateVal).filter(Boolean);
+  const nL = new Set(monSites.map(r=>r.lote).filter(Boolean)).size;
+  const nE = new Set(monSites.map(r=>r.empresa).filter(Boolean)).size;
+  const dvs = monRecorridas.map(r=>r.dateVal).filter(v => v && v > 0);
   const fmt = v => v ? `${String(v%100).padStart(2,'0')}/${String(Math.floor(v/100)%100).padStart(2,'0')}/${Math.floor(v/10000)}` : '';
+  const fechaRango = dvs.length ? `${fmt(Math.min(...dvs))}–${fmt(Math.max(...dvs))}` : 'sin fechas';
   document.getElementById('mon-hdr-stats').textContent =
-    `${nL} lotes · ${nE} empresas · ${monRecorridas.length} recorridas · ${fmt(Math.min(...dvs))}–${fmt(Math.max(...dvs))}`;
+    `${nL} lotes · ${nE} empresas · ${monRecorridas.length} recorridas · ${fechaRango}`;
 }
 
 // ── Render Último ──
@@ -2891,7 +2892,7 @@ function monShowDetail(keyStr, insect) {
     <b>Responsable:</b> ${rec.resp||'—'} &nbsp;·&nbsp; <b>Destino:</b> ${rec.destino||'—'} &nbsp;·&nbsp;
     <b>Sitios:</b> ${rec.sites.length}</div>`;
   if (insect === 'chinche') {
-    html += '<h4 style="font-size:13px;margin-bottom:10px;color:var(--text)">Desglose por especie de chinche</h4>';
+    html += '<h4 style="font-size:13px;margin-bottom:10px;color:var(--text)">🐛 Desglose por especie de chinche <span style="font-weight:400;font-size:11px;color:var(--text3)">(% sobre umbral)</span></h4>';
     html += monBar('Ch. de la Alfalfa', rec.ch_aa, rec.ch_aa_m2);
     html += monBar('Ch. Verde',         rec.ch_ve, rec.ch_ve_m2);
     html += monBar('Ch. de los Cuernos',rec.ch_cu, rec.ch_cu_m2);
@@ -2899,7 +2900,7 @@ function monShowDetail(keyStr, insect) {
     html += `<div style="border-top:1px solid var(--border);padding-top:8px;font-weight:600;font-size:13px;margin-top:8px">
       Total chinche: <span style="color:${monPctColor(rec.chinche)}">${rec.chinche!==null?rec.chinche+'%':'n/a'}</span></div>`;
   } else {
-    html += '<h4 style="font-size:13px;margin-bottom:10px;color:var(--text)">Isocas</h4>';
+    html += '<h4 style="font-size:13px;margin-bottom:10px;color:var(--text)">🐛 Isocas <span style="font-weight:400;font-size:11px;color:var(--text3)">(% sobre umbral)</span></h4>';
     html += monBar('Me &gt;1,5 cm', rec.me_gt, rec.me_gt_m2);
     html += monBar('Me &lt;1,5 cm', rec.me_lt, rec.me_lt_m2);
     html += monBar('Gata Peluda',   rec.gp,    rec.gp_m2);
@@ -2907,11 +2908,22 @@ function monShowDetail(keyStr, insect) {
     html += monBar('Bolillera',     rec.bol,   rec.bol_m2);
   }
   if (rec.sites.length) {
-    html += `<h4 style="font-size:12px;margin:14px 0 8px;border-top:1px solid var(--border);padding-top:10px;color:var(--text)">Sitios (ind/m²)</h4>
-      <table class="mon-site-tbl"><tr>
-        <th>Sitio</th><th>Me&gt;1,5</th><th>Me&lt;1,5</th><th>GP</th><th>Bol</th><th>Thecla</th>
-        <th>Ch aa</th><th>Ch ve</th><th>Ch cu</th><th>Ch alq</th><th>Arañ</th>
-      </tr>`;
+    html += `<h4 style="font-size:12px;margin:14px 0 8px;border-top:1px solid var(--border);padding-top:10px;color:var(--text)">
+      Detalle por sitio <span style="font-weight:400;color:var(--text3);font-size:11px">(valores en ind/m²)</span>
+    </h4>
+      <table class="mon-site-tbl"><thead><tr>
+        <th>Sitio #</th>
+        <th>Me&gt;1,5<br><span style="font-weight:400;font-size:9px">ind/m²</span></th>
+        <th>Me&lt;1,5<br><span style="font-weight:400;font-size:9px">ind/m²</span></th>
+        <th>Gata P.<br><span style="font-weight:400;font-size:9px">ind/m²</span></th>
+        <th>Bolillera<br><span style="font-weight:400;font-size:9px">ind/m²</span></th>
+        <th>Thecla<br><span style="font-weight:400;font-size:9px">ind/m²</span></th>
+        <th>Ch.Alfalfa<br><span style="font-weight:400;font-size:9px">ind/m²</span></th>
+        <th>Ch.Verde<br><span style="font-weight:400;font-size:9px">ind/m²</span></th>
+        <th>Ch.Cuernos<br><span style="font-weight:400;font-size:9px">ind/m²</span></th>
+        <th>Ch.Alquiche<br><span style="font-weight:400;font-size:9px">ind/m²</span></th>
+        <th>Arañuela</th>
+      </tr></thead><tbody>`;
     for (const s of [...rec.sites].sort((a,b)=>a.sitio-b.sitio)) {
       html += `<tr><td><b>${s.sitio}</b></td>
         <td>${s.me_gt_m2.toFixed(2)}</td><td>${s.me_lt_m2.toFixed(2)}</td>
@@ -2920,7 +2932,7 @@ function monShowDetail(keyStr, insect) {
         <td>${s.ch_cu_m2.toFixed(2)}</td><td>${s.ch_alq_m2.toFixed(2)}</td>
         <td>${s.aran?'✓':'–'}</td></tr>`;
     }
-    html += '</table>';
+    html += '</tbody></table>';
   }
   document.getElementById('mon-modal-body').innerHTML = html;
   document.getElementById('mon-modal-overlay').style.display = 'flex';
