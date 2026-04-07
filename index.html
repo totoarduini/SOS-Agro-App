@@ -2466,25 +2466,26 @@ function loadMonData() {
       }
 
       // Índices exactos de columnas en la hoja de Monitoreo Insectos Soja
-      // [0]ID [1]Insectos [2]Coordinador [3]Responsable [4]Registro [5]Hora
-      // [6]Fecha [7]Cultivo [8]Empresa [9]Campo [10]Lote [11]Destino
-      // [12]EF [13]EF Soja [14]Sitio [15]DEH(cm) [16]mL
-      // [17]Me>1,5 [18]Me<1,5 [19]GP [20]Bol [21]Thecla
-      // [22]Ch aa [23]Ch ve [24]Ch cu [25]Ch alq [26]Arañuela
-      // [27]Me>1,5 x m2 [28]Me<1,5 x m2 [29]GP x m2 [30]Bol x m2 [31]Thecla x m2
-      // [32]Ch aa x m2 [33]Ch ve x m2 [34]Ch cu x m2 [35]Ch alq x m2 [36]Arañ
-      // [37]Me>1,5% [38]Me<1,5% [39]GP% [40]Bol% [41]Thecla%
-      // [42]Ch aa% [43]Ch ve% [44]Ch cu% [45]Ch alq% [46]total chinche
+      // [0]ID  [1]Insectos  [2]Coordinador  [3]Responsable  [4]Registro  [5]Hora
+      // [6]Fecha  [7]Cultivo  [8]Empresa  [9]Campo  [10]Lote  [11]Destino
+      // [12]EF  [13]EF Soja  [14]Sitio  [15]DEH(cm)  [16]mL
+      // [17]Me>1,5  [18]Me<1,5  [19]GP  [20]Bol  [21]Thecla
+      // [22]Ch aa  [23]Ch ve  [24]Ch cu  [25]Ch alq  [26]Arañuela (SI/NO)
+      // [27]Me>1,5 x m2  [28]Me<1,5 x m2  [29]GP x m2  [30]Bol x m2  [31]Thecla x m2
+      // [32]Ch aa x m2  [33]Ch ve x m2  [34]Ch cu x m2  [35]Ch alq x m2  [36]Arañ x m2
+      // [37]Me>1,5%  [38]Me<1,5%  [39]GP%  [40]Bol%  [41]Thecla%
+      // [42]Ch aa%  [43]Ch ve%  [44]Ch cu%  [45]Ch alq%  [46]total chinche
 
       const rows = res.data.slice(1); // saltar fila de encabezados
       const n = s => { const v = String(s||'').replace(',','.'); return parseFloat(v)||0; };
 
       monSites = rows.flatMap(p => {
-        if (p.length < 37) return [];
+        if (p.length < 27) return [];
         const lote  = String(p[10]||'').trim();
         const fecha = String(p[6] ||'').trim();
         if (!lote || !fecha) return [];
-        const arRaw = String(p[36]||'').trim().toUpperCase();
+        // Arañuela está en columna [26] como SI/NO (texto)
+        const arRaw = String(p[26]||'').trim().toUpperCase();
         return [{
           resp:      String(p[3] ||'').trim(),
           fecha,
@@ -2495,7 +2496,7 @@ function loadMonData() {
           destino:   String(p[11]||'').trim() || 'Cosecha',
           ef:        String(p[13]||p[12]||'').trim(),  // EF Soja, fallback EF
           sitio:     parseInt(p[14]) || 1,
-          // Valores x m2 (para display en modal)
+          // Valores x m2 (para display en modal) — disponibles si hay suficientes columnas
           me_gt_m2:  n(p[27]), me_lt_m2: n(p[28]),
           gp_m2:     n(p[29]), bol_m2:   n(p[30]), thecla_m2: n(p[31]),
           ch_aa_m2:  n(p[32]), ch_ve_m2: n(p[33]), ch_cu_m2:  n(p[34]), ch_alq_m2: n(p[35]),
@@ -2503,7 +2504,7 @@ function loadMonData() {
           p_me_gt:   n(p[37]), p_me_lt:  n(p[38]),
           p_gp:      n(p[39]), p_bol:    n(p[40]), p_thecla:  n(p[41]),
           p_ch_aa:   n(p[42]), p_ch_ve:  n(p[43]), p_ch_cu:   n(p[44]), p_ch_alq:  n(p[45]),
-          // Arañuela: SI/NO boolean
+          // Arañuela: SI/NO en col [26]; fallback al valor x m2 en col [36]
           aran: arRaw==='SI'?1 : arRaw==='NO'?0 : n(p[36])>0?1:0,
         }];
       });
