@@ -2458,52 +2458,53 @@ function loadMonData() {
   if (monDataLoaded) return;
   document.getElementById('mon-hdr-stats').textContent = 'Cargando datos…';
   Papa.parse(MON_CSV, {
-    download: true, header: true, skipEmptyLines: true,
+    download: true, header: false, skipEmptyLines: true,
     complete(res) {
       if (!res.data?.length) {
         document.getElementById('mon-hdr-stats').textContent = 'No se encontraron datos.';
         return;
       }
 
-      // Mapeo exacto por nombre de columna del Google Sheet de Monitoreo Insectos Soja
-      // Columnas: ID | Insectos | Coordinador | Responsable | Registro | Hora | Fecha |
-      //           Cultivo | Empresa | Campo | Lote | Destino | EF | EF Soja | Sitio |
-      //           DEH (cm) | mL | Me > 1,5 | Me < 1,5 | GP | Bol | Thecla |
-      //           Ch aa | Ch ve | Ch cu | Ch alq | Arañuela |
-      //           Me > 1,5 x m2 | Me < 1,5 x m2 | GP x m2 | Bol x m2 | Thecla x m2 |
-      //           Ch aa x m2 | Ch ve x m2 | Ch cu x m2 | Ch alq x m2 | Arañ |
-      //           Me > 1,5 % | Me < 1,5 % | GP % | Bol % | Thecla % |
-      //           Ch aa % | Ch ve % | Ch cu % | Ch alq % | total chinche
+      // Índices exactos de columnas en la hoja de Monitoreo Insectos Soja
+      // [0]ID [1]Insectos [2]Coordinador [3]Responsable [4]Registro [5]Hora
+      // [6]Fecha [7]Cultivo [8]Empresa [9]Campo [10]Lote [11]Destino
+      // [12]EF [13]EF Soja [14]Sitio [15]DEH(cm) [16]mL
+      // [17]Me>1,5 [18]Me<1,5 [19]GP [20]Bol [21]Thecla
+      // [22]Ch aa [23]Ch ve [24]Ch cu [25]Ch alq [26]Arañuela
+      // [27]Me>1,5 x m2 [28]Me<1,5 x m2 [29]GP x m2 [30]Bol x m2 [31]Thecla x m2
+      // [32]Ch aa x m2 [33]Ch ve x m2 [34]Ch cu x m2 [35]Ch alq x m2 [36]Arañ
+      // [37]Me>1,5% [38]Me<1,5% [39]GP% [40]Bol% [41]Thecla%
+      // [42]Ch aa% [43]Ch ve% [44]Ch cu% [45]Ch alq% [46]total chinche
 
-      const n  = s => { const v = String(s||'').replace(',','.'); return parseFloat(v)||0; };
-      const g  = (row, col) => String(row[col]||'').trim();
-      const gn = (row, col) => n(g(row, col));
+      const rows = res.data.slice(1); // saltar fila de encabezados
+      const n = s => { const v = String(s||'').replace(',','.'); return parseFloat(v)||0; };
 
-      monSites = res.data.flatMap(row => {
-        const lote  = g(row, 'Lote');
-        const fecha = g(row, 'Fecha');
+      monSites = rows.flatMap(p => {
+        if (p.length < 37) return [];
+        const lote  = String(p[10]||'').trim();
+        const fecha = String(p[6] ||'').trim();
         if (!lote || !fecha) return [];
-        const arRaw = g(row, 'Arañ').toUpperCase();
+        const arRaw = String(p[36]||'').trim().toUpperCase();
         return [{
-          resp:      g(row, 'Responsable'),
+          resp:      String(p[3] ||'').trim(),
           fecha,
-          cultivo:   g(row, 'Cultivo'),
-          empresa:   g(row, 'Empresa'),
-          campo:     g(row, 'Campo'),
+          cultivo:   String(p[7] ||'').trim(),
+          empresa:   String(p[8] ||'').trim(),
+          campo:     String(p[9] ||'').trim(),
           lote,
-          destino:   g(row, 'Destino') || 'Cosecha',
-          ef:        g(row, 'EF Soja') || g(row, 'EF'),
-          sitio:     parseInt(g(row, 'Sitio')) || 1,
-          me_gt_m2:  gn(row, 'Me > 1,5 x m2'),
-          me_lt_m2:  gn(row, 'Me < 1,5 x m2'),
-          gp_m2:     gn(row, 'GP x m2'),
-          bol_m2:    gn(row, 'Bol x m2'),
-          thecla_m2: gn(row, 'Thecla x m2'),
-          ch_aa_m2:  gn(row, 'Ch aa x m2'),
-          ch_ve_m2:  gn(row, 'Ch ve x m2'),
-          ch_cu_m2:  gn(row, 'Ch cu x m2'),
-          ch_alq_m2: gn(row, 'Ch alq x m2'),
-          aran: arRaw==='SI'?1 : arRaw==='NO'?0 : gn(row,'Arañ')>0?1:0,
+          destino:   String(p[11]||'').trim() || 'Cosecha',
+          ef:        String(p[13]||p[12]||'').trim(),  // EF Soja, fallback EF
+          sitio:     parseInt(p[14]) || 1,
+          // Valores x m2 (para display en modal)
+          me_gt_m2:  n(p[27]), me_lt_m2: n(p[28]),
+          gp_m2:     n(p[29]), bol_m2:   n(p[30]), thecla_m2: n(p[31]),
+          ch_aa_m2:  n(p[32]), ch_ve_m2: n(p[33]), ch_cu_m2:  n(p[34]), ch_alq_m2: n(p[35]),
+          // Porcentajes ya calculados en la planilla (fuente de verdad para el umbral)
+          p_me_gt:   n(p[37]), p_me_lt:  n(p[38]),
+          p_gp:      n(p[39]), p_bol:    n(p[40]), p_thecla:  n(p[41]),
+          p_ch_aa:   n(p[42]), p_ch_ve:  n(p[43]), p_ch_cu:   n(p[44]), p_ch_alq:  n(p[45]),
+          // Arañuela: SI/NO boolean
+          aran: arRaw==='SI'?1 : arRaw==='NO'?0 : n(p[36])>0?1:0,
         }];
       });
 
@@ -2538,28 +2539,38 @@ function monComputeRecorridas() {
   }
   monRecorridas = Object.values(map).map(r => {
     const ss = r.sites, n = ss.length;
-    const avg = k => ss.reduce((a, s) => a + (s[k] || 0), 0) / n;
+    const avg  = k => ss.reduce((a, s) => a + (s[k] || 0), 0) / n;
+    const avgR = k => Math.round(avg(k));   // promedio redondeado de porcentajes
     const dest = monPrefs.lote_destino[r.lote] || r.destino || 'Cosecha';
-    const ef = r.ef;
-    const me_gt_m2=avg('me_gt_m2'), me_lt_m2=avg('me_lt_m2');
-    const gp_m2=avg('gp_m2'), bol_m2=avg('bol_m2'), thecla_m2=avg('thecla_m2');
-    const ch_aa_m2=avg('ch_aa_m2'), ch_ve_m2=avg('ch_ve_m2');
-    const ch_cu_m2=avg('ch_cu_m2'), ch_alq_m2=avg('ch_alq_m2');
-    const pChAa=monCalcPct(ch_aa_m2,'ch_aa',ef,dest);
-    const pChVe=monCalcPct(ch_ve_m2,'ch_ve',ef,dest);
-    const pChCu=monCalcPct(ch_cu_m2,'ch_cu',ef,dest);
-    const pChAlq=monCalcPct(ch_alq_m2,'ch_alq',ef,dest);
-    const g = monEfGroup(ef, dest);
-    const chinche = g === 'R12' ? null : (pChAa||0)+(pChVe||0)+(pChCu||0)+(pChAlq||0);
+    const ef   = r.ef;
+    const g    = monEfGroup(ef, dest);
+
+    // Promediar porcentajes ya calculados en la planilla
+    const me_gt  = avgR('p_me_gt');
+    const me_lt  = avgR('p_me_lt');
+    const gp     = avgR('p_gp');
+    const bol    = avgR('p_bol');
+    const thecla = avgR('p_thecla');
+    const ch_aa  = avgR('p_ch_aa');
+    const ch_ve  = avgR('p_ch_ve');
+    const ch_cu  = avgR('p_ch_cu');
+    const ch_alq = avgR('p_ch_alq');
+
+    // Total chinche: nulo en R1/R2, suma de especies en resto
+    const chinche = g === 'R12' ? null : ch_aa + ch_ve + ch_cu + ch_alq;
+
+    // Promediar valores x m2 para mostrar en modal
+    const me_gt_m2  = avg('me_gt_m2'),  me_lt_m2 = avg('me_lt_m2');
+    const gp_m2     = avg('gp_m2'),     bol_m2   = avg('bol_m2'),  thecla_m2 = avg('thecla_m2');
+    const ch_aa_m2  = avg('ch_aa_m2'),  ch_ve_m2 = avg('ch_ve_m2');
+    const ch_cu_m2  = avg('ch_cu_m2'),  ch_alq_m2= avg('ch_alq_m2');
+
     return { ...r, destino:dest, dateVal:monDateVal(r.fecha),
-      me_gt:monCalcPct(me_gt_m2,'me_gt',ef,dest),
-      me_lt:monCalcPct(me_lt_m2,'me_lt',ef,dest),
-      gp:monCalcPct(gp_m2,'gp',ef,dest),
-      bol:monCalcPct(bol_m2,'bol',ef,dest),
-      thecla:monCalcPct(thecla_m2,'thecla',ef,dest),
-      ch_aa:pChAa, ch_ve:pChVe, ch_cu:pChCu, ch_alq:pChAlq, chinche,
-      aran:Math.round(avg('aran')*100),
-      me_gt_m2,me_lt_m2,gp_m2,bol_m2,thecla_m2,ch_aa_m2,ch_ve_m2,ch_cu_m2,ch_alq_m2 };
+      me_gt, me_lt, gp, bol, thecla,
+      ch_aa, ch_ve, ch_cu, ch_alq, chinche,
+      aran: Math.round(avg('aran') * 100),
+      me_gt_m2, me_lt_m2, gp_m2, bol_m2, thecla_m2,
+      ch_aa_m2, ch_ve_m2, ch_cu_m2, ch_alq_m2 };
   });
   monRecorridas.sort((a, b) => b.dateVal - a.dateVal);
 }
