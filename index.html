@@ -2458,28 +2458,55 @@ function loadMonData() {
   if (monDataLoaded) return;
   document.getElementById('mon-hdr-stats').textContent = 'Cargando datos…';
   Papa.parse(MON_CSV, {
-    download: true, header: false, skipEmptyLines: true,
+    download: true, header: true, skipEmptyLines: true,
     complete(res) {
       if (!res.data?.length) {
         document.getElementById('mon-hdr-stats').textContent = 'No se encontraron datos.';
         return;
       }
-      const rows = res.data.slice(1); // skip header row
-      const n = s => { const v = (s || '').replace(',', '.'); return parseFloat(v) || 0; };
-      monSites = rows.flatMap(p => {
-        if (p.length < 34) return [];
-        const ar = (p[33] || '').toUpperCase();
-        const row = {
-          resp: p[0], fecha: p[2], cultivo: p[4], empresa: p[5], campo: p[6],
-          lote: p[7], destino: p[8] || 'Cosecha', ef: p[10] || p[9] || '',
-          sitio: parseInt(p[11]) || 1,
-          me_gt_m2: n(p[24]), me_lt_m2: n(p[25]), gp_m2: n(p[26]),
-          bol_m2: n(p[27]), thecla_m2: n(p[28]),
-          ch_aa_m2: n(p[29]), ch_ve_m2: n(p[30]), ch_cu_m2: n(p[31]), ch_alq_m2: n(p[32]),
-          aran: ar === 'SI' ? 1 : ar === 'NO' ? 0 : n(p[33]) > 0 ? 1 : 0
-        };
-        return (row.lote && row.fecha) ? [row] : [];
+
+      // Mapeo exacto por nombre de columna del Google Sheet de Monitoreo Insectos Soja
+      // Columnas: ID | Insectos | Coordinador | Responsable | Registro | Hora | Fecha |
+      //           Cultivo | Empresa | Campo | Lote | Destino | EF | EF Soja | Sitio |
+      //           DEH (cm) | mL | Me > 1,5 | Me < 1,5 | GP | Bol | Thecla |
+      //           Ch aa | Ch ve | Ch cu | Ch alq | Arañuela |
+      //           Me > 1,5 x m2 | Me < 1,5 x m2 | GP x m2 | Bol x m2 | Thecla x m2 |
+      //           Ch aa x m2 | Ch ve x m2 | Ch cu x m2 | Ch alq x m2 | Arañ |
+      //           Me > 1,5 % | Me < 1,5 % | GP % | Bol % | Thecla % |
+      //           Ch aa % | Ch ve % | Ch cu % | Ch alq % | total chinche
+
+      const n  = s => { const v = String(s||'').replace(',','.'); return parseFloat(v)||0; };
+      const g  = (row, col) => String(row[col]||'').trim();
+      const gn = (row, col) => n(g(row, col));
+
+      monSites = res.data.flatMap(row => {
+        const lote  = g(row, 'Lote');
+        const fecha = g(row, 'Fecha');
+        if (!lote || !fecha) return [];
+        const arRaw = g(row, 'Arañ').toUpperCase();
+        return [{
+          resp:      g(row, 'Responsable'),
+          fecha,
+          cultivo:   g(row, 'Cultivo'),
+          empresa:   g(row, 'Empresa'),
+          campo:     g(row, 'Campo'),
+          lote,
+          destino:   g(row, 'Destino') || 'Cosecha',
+          ef:        g(row, 'EF Soja') || g(row, 'EF'),
+          sitio:     parseInt(g(row, 'Sitio')) || 1,
+          me_gt_m2:  gn(row, 'Me > 1,5 x m2'),
+          me_lt_m2:  gn(row, 'Me < 1,5 x m2'),
+          gp_m2:     gn(row, 'GP x m2'),
+          bol_m2:    gn(row, 'Bol x m2'),
+          thecla_m2: gn(row, 'Thecla x m2'),
+          ch_aa_m2:  gn(row, 'Ch aa x m2'),
+          ch_ve_m2:  gn(row, 'Ch ve x m2'),
+          ch_cu_m2:  gn(row, 'Ch cu x m2'),
+          ch_alq_m2: gn(row, 'Ch alq x m2'),
+          aran: arRaw==='SI'?1 : arRaw==='NO'?0 : gn(row,'Arañ')>0?1:0,
+        }];
       });
+
       monComputeRecorridas();
       monPopulateAllFilters();
       monUpdateStats();
