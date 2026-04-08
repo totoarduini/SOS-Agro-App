@@ -2537,6 +2537,7 @@ function loadMonData() {
           p_ch_ve:   n(G(p,'Ch ve %','Ch ve%')),
           p_ch_cu:   n(G(p,'Ch cu %','Ch cu%')),
           p_ch_alq:  n(G(p,'Ch alq %','Ch alq%')),
+          p_total_ch: n(G(p,'total chinche','Total chinche','Total Chinche')),
           // Arañuela: SI/NO
           aran: arRaw==='SI'?1 : arRaw==='NO'?0 : arM2>0?1:0,
         }];
@@ -2579,19 +2580,40 @@ function monComputeRecorridas() {
     const ef   = r.ef;
     const g    = monEfGroup(ef, dest);
 
-    // Promediar porcentajes ya calculados en la planilla
+    // Promediar porcentajes de insectos (isocas) desde columnas "%" de la planilla
     const me_gt  = avgR('p_me_gt');
     const me_lt  = avgR('p_me_lt');
     const gp     = avgR('p_gp');
     const bol    = avgR('p_bol');
     const thecla = avgR('p_thecla');
-    const ch_aa  = avgR('p_ch_aa');
-    const ch_ve  = avgR('p_ch_ve');
-    const ch_cu  = avgR('p_ch_cu');
-    const ch_alq = avgR('p_ch_alq');
 
-    // Total chinche: nulo en R1/R2, suma de especies en resto
-    const chinche = g === 'R12' ? null : ch_aa + ch_ve + ch_cu + ch_alq;
+    // Helper: normaliza un valor que puede venir en escala 0-1 (Google Sheets
+    // celda con formato %) o en escala 0-100 (ya como porcentaje numérico).
+    // Si raw < 1 → es decimal de Sheets → multiplicar por 100.
+    const normPct = raw => raw > 0 && raw < 1 ? Math.round(raw * 100) : Math.round(raw);
+
+    // Para chinches: intentar desde columna "%" de planilla (con detección de escala),
+    // luego fallback calculando desde ind/m² y umbral.
+    const chPct = (ins, m2k) => {
+      const raw = avg('p_' + ins);
+      if (raw > 0) return normPct(raw);
+      const u = MON_UMBRAL[ins][g];
+      return (u && u > 0) ? Math.round(avg(m2k) / u * 100) : 0;
+    };
+    const ch_aa  = chPct('ch_aa',  'ch_aa_m2');
+    const ch_ve  = chPct('ch_ve',  'ch_ve_m2');
+    const ch_cu  = chPct('ch_cu',  'ch_cu_m2');
+    const ch_alq = chPct('ch_alq', 'ch_alq_m2');
+
+    // Total chinche: preferir columna "total chinche" de la planilla;
+    // si no existe o es 0, usar suma de especies calculadas.
+    let chinche;
+    if (g === 'R12') {
+      chinche = null;
+    } else {
+      const totalRaw = avg('p_total_ch');
+      chinche = totalRaw > 0 ? normPct(totalRaw) : ch_aa + ch_ve + ch_cu + ch_alq;
+    }
 
     // Promediar valores x m2 para mostrar en modal
     const me_gt_m2  = avg('me_gt_m2'),  me_lt_m2 = avg('me_lt_m2');
@@ -2791,9 +2813,32 @@ document.querySelectorAll('#mon-tbl-ult thead th[data-mon-col]').forEach(th => {
 });
 
 // ── Render Acum ──
+
+// Convierte cualquier código EF al bucket canónico R3/R4/R5/R6/R7 para el acumulado.
+// Devuelve null para R1/R2 (no aportan al acumulado de chinches).
+// Permite manejar valores como "R5.3", "R5/R6", "R3.5", etc.
+function monEfToAcumKey(ef, dest) {
+  const g = monEfGroup(ef, dest);
+  const e = (ef || '').toUpperCase().trim();
+  if (g === 'R12') return null;
+  if (g === 'R34') return (e === 'R4' || e.startsWith('R4')) ? 'R4' : 'R3';
+  if (g === 'R5')  return 'R5';
+  if (g === 'R67' || g === 'R67s') return (e === 'R7' || e.startsWith('R7')) ? 'R7' : 'R6';
+  return null;
+}
+
 function monComputeAcumData() {
-  const filtered = monGetFiltered();
-  const EF_ACUM = ['R3','R4','R5','R6','R7'];
+  // Para umbral acumulado no aplicar filtro de EF (se necesitan todos R3–R7 por lote)
+  const fE=monV('mon-f-empresa'), fCa=monV('mon-f-campo'), fL=monV('mon-f-lote');
+  const fCu=monV('mon-f-cultivo'), fR=monV('mon-f-resp');
+  const filtered = monRecorridas.filter(r => {
+    if (fE  && r.empresa !== fE)  return false;
+    if (fCa && r.campo   !== fCa) return false;
+    if (fL  && r.lote    !== fL)  return false;
+    if (fCu && r.cultivo !== fCu) return false;
+    if (fR  && r.resp    !== fR)  return false;
+    return true;
+  });
   const loteMap = {};
   for (const r of filtered) {
     const k = r.cultivo+'||'+r.lote;
@@ -2805,11 +2850,12 @@ function monComputeAcumData() {
     const loteDate = monPrefs.lote_date[L.lote] || globalDate || '';
     const loteDV = loteDate ? monDateVal(loteDate.split('-').reverse().join('/')) : 0;
     const dest = monPrefs.lote_destino[L.lote] || L.recs[0]?.destino || 'Cosecha';
-    const valid = L.recs.filter(r => (!loteDV||r.dateVal>=loteDV) && EF_ACUM.includes(r.ef.toUpperCase()));
+    const valid = L.recs.filter(r => (!loteDV||r.dateVal>=loteDV) && monEfToAcumKey(r.ef, r.destino) !== null);
     const maxByEF = {};
     for (const r of valid) {
-      const ef=r.ef.toUpperCase(), v=r.chinche;
-      if (v!==null && v!==undefined && (maxByEF[ef]===undefined||v>maxByEF[ef].val))
+      const ef = monEfToAcumKey(r.ef, r.destino);
+      const v = r.chinche;
+      if (ef && v!==null && v!==undefined && (maxByEF[ef]===undefined||v>maxByEF[ef].val))
         maxByEF[ef]={val:v,fecha:r.fecha};
     }
     const acum = Math.round(Object.values(maxByEF).reduce((s,x)=>s+x.val,0));
