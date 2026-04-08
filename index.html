@@ -2536,17 +2536,6 @@ function loadMonData() {
           ch_ve_m2:  n(G(p,'Ch ve x m2')),
           ch_cu_m2:  n(G(p,'Ch cu x m2')),
           ch_alq_m2: n(G(p,'Ch alq x m2')),
-          // Porcentajes calculados en la planilla
-          p_me_gt:   n(G(p,'Me > 1,5 %','Me>1,5 %','Me > 1,5%')),
-          p_me_lt:   n(G(p,'Me < 1,5 %','Me<1,5 %','Me < 1,5%')),
-          p_gp:      n(G(p,'GP %','GP%')),
-          p_bol:     n(G(p,'Bol %','Bol%')),
-          p_thecla:  n(G(p,'Thecla %','Thecla%')),
-          p_ch_aa:   n(G(p,'Ch aa %','Ch aa%')),
-          p_ch_ve:   n(G(p,'Ch ve %','Ch ve%')),
-          p_ch_cu:   n(G(p,'Ch cu %','Ch cu%')),
-          p_ch_alq:  n(G(p,'Ch alq %','Ch alq%')),
-          p_total_ch: n(G(p,'total chinche','Total chinche','Total Chinche')),
           // Arañuela: SI/NO
           aran: arRaw==='SI'?1 : arRaw==='NO'?0 : arM2>0?1:0,
         }];
@@ -2582,53 +2571,47 @@ function monComputeRecorridas() {
     map[k].ef = s.ef; map[k].resp = s.resp;
   }
   monRecorridas = Object.values(map).map(r => {
-    const ss = r.sites, n = ss.length;
+    const ss   = r.sites, n = ss.length;
+    // Promedio de ind/m² entre todos los sitios de la recorrida
     const avg  = k => ss.reduce((a, s) => a + (s[k] || 0), 0) / n;
-    const avgR = k => Math.round(avg(k));   // promedio redondeado de porcentajes
     const dest = monPrefs.lote_destino[r.lote] || r.destino || 'Cosecha';
     const ef   = r.ef;
     const g    = monEfGroup(ef, dest);
 
-    // Promediar porcentajes de insectos (isocas) desde columnas "%" de la planilla
-    const me_gt  = avgR('p_me_gt');
-    const me_lt  = avgR('p_me_lt');
-    const gp     = avgR('p_gp');
-    const bol    = avgR('p_bol');
-    const thecla = avgR('p_thecla');
-
-    // Helper: normaliza un valor que puede venir en escala 0-1 (Google Sheets
-    // celda con formato %) o en escala 0-100 (ya como porcentaje numérico).
-    // Si raw < 1 → es decimal de Sheets → multiplicar por 100.
-    const normPct = raw => raw > 0 && raw < 1 ? Math.round(raw * 100) : Math.round(raw);
-
-    // Para chinches: intentar desde columna "%" de planilla (con detección de escala),
-    // luego fallback calculando desde ind/m² y umbral.
-    const chPct = (ins, m2k) => {
-      const raw = avg('p_' + ins);
-      if (raw > 0) return normPct(raw);
-      const u = MON_UMBRAL[ins][g];
-      return (u && u > 0) ? Math.round(avg(m2k) / u * 100) : 0;
+    // Calcula % sobre umbral a partir de ind/m² promedio.
+    // u === null → insecto sin umbral en ese EF (ej: chinches en R1/R2) → retorna null.
+    // u === 0 o inexistente → retorna 0.
+    const pct = (m2k, ins) => {
+      const u = MON_UMBRAL[ins] ? MON_UMBRAL[ins][g] : null;
+      if (u === null) return null;          // sin umbral en este EF
+      if (!u)         return 0;
+      return Math.round(avg(m2k) / u * 100);
     };
-    const ch_aa  = chPct('ch_aa',  'ch_aa_m2');
-    const ch_ve  = chPct('ch_ve',  'ch_ve_m2');
-    const ch_cu  = chPct('ch_cu',  'ch_cu_m2');
-    const ch_alq = chPct('ch_alq', 'ch_alq_m2');
 
-    // Total chinche: preferir columna "total chinche" de la planilla;
-    // si no existe o es 0, usar suma de especies calculadas.
-    let chinche;
-    if (g === 'R12') {
-      chinche = null;
-    } else {
-      const totalRaw = avg('p_total_ch');
-      chinche = totalRaw > 0 ? normPct(totalRaw) : ch_aa + ch_ve + ch_cu + ch_alq;
-    }
+    // Isocas — umbral uniforme por EF (no varía con destino)
+    const me_gt  = pct('me_gt_m2',  'me_gt');
+    const me_lt  = pct('me_lt_m2',  'me_lt');
+    const gp     = pct('gp_m2',     'gp');
+    const bol    = pct('bol_m2',    'bol');
+    const thecla = pct('thecla_m2', 'thecla');
 
-    // Promediar valores x m2 para mostrar en modal
-    const me_gt_m2  = avg('me_gt_m2'),  me_lt_m2 = avg('me_lt_m2');
-    const gp_m2     = avg('gp_m2'),     bol_m2   = avg('bol_m2'),  thecla_m2 = avg('thecla_m2');
-    const ch_aa_m2  = avg('ch_aa_m2'),  ch_ve_m2 = avg('ch_ve_m2');
-    const ch_cu_m2  = avg('ch_cu_m2'),  ch_alq_m2= avg('ch_alq_m2');
+    // Chinches — umbral varía con EF y destino (Cosecha vs Semilla)
+    // En R1/R2 no hay umbral → pct devuelve null
+    const ch_aa  = pct('ch_aa_m2',  'ch_aa');
+    const ch_ve  = pct('ch_ve_m2',  'ch_ve');
+    const ch_cu  = pct('ch_cu_m2',  'ch_cu');
+    const ch_alq = pct('ch_alq_m2', 'ch_alq');
+
+    // Chinche total: null en R1/R2; suma de % por especie en el resto.
+    // Usar la suma de % (no sum(ind/m²)/umbral_combinado) para respetar
+    // que cada especie tiene su propio umbral.
+    const chinche = (g === 'R12') ? null : (ch_aa||0) + (ch_ve||0) + (ch_cu||0) + (ch_alq||0);
+
+    // Promedios de ind/m² por especie (para mostrar en modal de detalle)
+    const me_gt_m2  = avg('me_gt_m2'),  me_lt_m2  = avg('me_lt_m2');
+    const gp_m2     = avg('gp_m2'),     bol_m2    = avg('bol_m2'),  thecla_m2 = avg('thecla_m2');
+    const ch_aa_m2  = avg('ch_aa_m2'),  ch_ve_m2  = avg('ch_ve_m2');
+    const ch_cu_m2  = avg('ch_cu_m2'),  ch_alq_m2 = avg('ch_alq_m2');
 
     return { ...r, destino:dest, dateVal:monDateVal(r.fecha),
       me_gt, me_lt, gp, bol, thecla,
