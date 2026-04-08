@@ -726,8 +726,12 @@ td.mono { font-family: 'IBM Plex Mono', monospace; font-size: 12px; }
           <div class="mon-date-ctrl">
             <label>Inicio global del acumulado:</label>
             <input type="date" id="mon-acum-date-global" onchange="monGlobalDateChanged()">
+            <button onclick="monClearGlobalDate()" style="margin-left:6px;padding:3px 10px;font-size:11px;border:1px solid var(--border);border-radius:5px;background:var(--surface2);cursor:pointer;color:var(--text2)">✕ Limpiar fecha</button>
           </div>
           <span style="font-size:11px;color:var(--text2)">Al cambiar la fecha global se restablecen las fechas individuales de todos los lotes.</span>
+        </div>
+        <div id="mon-acum-date-warn" style="display:none;background:#fef2f2;border:1px solid #fecaca;border-radius:6px;padding:8px 12px;margin-bottom:8px;font-size:12px;color:#991b1b">
+          ⚠ La fecha de inicio filtra todos los registros disponibles. Hacé clic en "Limpiar fecha" para ver los datos.
         </div>
         <table id="mon-tbl-acum">
           <thead><tr>
@@ -2450,6 +2454,11 @@ function monLoadPrefs() {
   monPrefs.lote_destino = monPrefs.lote_destino || {};
   monPrefs.lote_date    = monPrefs.lote_date    || {};
   monPrefs.global_date  = monPrefs.global_date  || '';
+  // Restaurar el valor del input de fecha global al cargar
+  setTimeout(() => {
+    const el = document.getElementById('mon-acum-date-global');
+    if (el && monPrefs.global_date) el.value = monPrefs.global_date;
+  }, 0);
 }
 function monSavePrefs() { localStorage.setItem(MON_PREFS_KEY, JSON.stringify(monPrefs)); }
 
@@ -2871,6 +2880,13 @@ function monRenderAcum() {
     return c!==0 ? monAcumSort.dir*c : a._i-b._i;
   });
   const tbody = document.getElementById('mon-tbody-acum');
+  // Detectar si la fecha global está filtrando todo
+  const warn = document.getElementById('mon-acum-date-warn');
+  if (warn) {
+    const gd = monPrefs.global_date;
+    const allZeroByDate = gd && data.length > 0 && data.every(d => Object.keys(d.maxByEF).length === 0);
+    warn.style.display = allZeroByDate ? 'block' : 'none';
+  }
   if (!data.length) { tbody.innerHTML='<tr><td colspan="8" class="mon-no-data">Sin datos</td></tr>'; return; }
   const rows = [];
   for (const L of data) {
@@ -2957,6 +2973,15 @@ function monGlobalDateChanged() {
   monPrefs.global_date = d;
   Object.keys(monPrefs.lote_date).forEach(k => delete monPrefs.lote_date[k]);
   monSavePrefs();
+  monExpandedAcum = {};
+  monRenderAcum();
+}
+function monClearGlobalDate() {
+  monPrefs.global_date = '';
+  Object.keys(monPrefs.lote_date).forEach(k => delete monPrefs.lote_date[k]);
+  monSavePrefs();
+  const el = document.getElementById('mon-acum-date-global');
+  if (el) el.value = '';
   monExpandedAcum = {};
   monRenderAcum();
 }
