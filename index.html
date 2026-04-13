@@ -2486,6 +2486,7 @@ function loadMonData() {
     download: true, header: true, skipEmptyLines: true,
     complete(res) {
       clearTimeout(timeoutId);
+      try {
       if (!res.data?.length) {
         statsEl.textContent = 'No se encontraron datos. Verificá que la hoja esté publicada como CSV.';
         return;
@@ -2510,6 +2511,8 @@ function loadMonData() {
       console.log('🐛 MON CSV fila1:', res.data[0]);
       // Guardamos en variable global para mostrarlo en UI
       window._monCsvCols = csvCols;
+      // Mostrar diagnóstico temporario con columnas encontradas y conteo de filas
+      statsEl.textContent = `CSV cargado: ${res.data.length} filas · ${csvCols.length} columnas · procesando…`;
 
       // Búsqueda de columnas Me > 1,5 y Me < 1,5 por el signo > / <
       // (el normalizador las confunde porque ambas colapsan a "me15")
@@ -2652,6 +2655,12 @@ function loadMonData() {
       monUpdateStats();
       monSwitchSubTab('ult');
       monDataLoaded = true;
+      } catch(jsErr) {
+        statsEl.innerHTML = '⚠ Error al procesar los datos: <code>' + jsErr.message + '</code><br>'
+          + '<small style="color:#64748b">Revisá la consola del navegador (F12) para más detalles.</small><br>'
+          + '<button onclick="monDataLoaded=false;loadMonData()" style="margin-top:6px;padding:3px 10px;border:1px solid #ccc;border-radius:4px;cursor:pointer;font-size:12px">Reintentar</button>';
+        console.error('MON loadMonData error:', jsErr);
+      }
     },
     error(err) {
       clearTimeout(timeoutId);
