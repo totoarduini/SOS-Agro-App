@@ -2468,12 +2468,26 @@ function monSavePrefs() { localStorage.setItem(MON_PREFS_KEY, JSON.stringify(mon
 
 function loadMonData() {
   if (monDataLoaded) return;
-  document.getElementById('mon-hdr-stats').textContent = 'Cargando datos…';
+  const statsEl = document.getElementById('mon-hdr-stats');
+  statsEl.textContent = 'Cargando datos…';
+
+  // Timeout de seguridad: si PapaParse no responde en 25 segundos, mostrar error
+  const timeoutId = setTimeout(() => {
+    if (!monDataLoaded) {
+      statsEl.innerHTML = '⚠ Timeout: no se pudo cargar el CSV en 25 segundos.<br>'
+        + 'Verificá que la planilla esté <b>publicada en la web</b> (Archivo → Compartir → Publicar en la web) '
+        + 'y que el GID de la hoja sea correcto.<br>'
+        + '<small style="color:#64748b;font-family:monospace">' + MON_CSV + '</small><br>'
+        + '<button onclick="monDataLoaded=false;loadMonData()" style="margin-top:6px;padding:3px 10px;border:1px solid #ccc;border-radius:4px;cursor:pointer;font-size:12px">Reintentar</button>';
+    }
+  }, 25000);
+
   Papa.parse(MON_CSV, {
     download: true, header: true, skipEmptyLines: true,
     complete(res) {
+      clearTimeout(timeoutId);
       if (!res.data?.length) {
-        document.getElementById('mon-hdr-stats').textContent = 'No se encontraron datos.';
+        statsEl.textContent = 'No se encontraron datos. Verificá que la hoja esté publicada como CSV.';
         return;
       }
 
@@ -2640,7 +2654,11 @@ function loadMonData() {
       monDataLoaded = true;
     },
     error(err) {
-      document.getElementById('mon-hdr-stats').textContent = 'Error al cargar: ' + err.message;
+      clearTimeout(timeoutId);
+      const statsEl2 = document.getElementById('mon-hdr-stats');
+      statsEl2.innerHTML = '⚠ Error al cargar datos: ' + (err.message || err)
+        + ' — Verificá que la URL del CSV sea válida y la planilla esté publicada.'
+        + '<button onclick="monDataLoaded=false;loadMonData()" style="margin-left:8px;padding:3px 10px;border:1px solid #ccc;border-radius:4px;cursor:pointer;font-size:12px">Reintentar</button>';
     }
   });
 }
