@@ -2464,24 +2464,7 @@ function monSavePrefs() { localStorage.setItem(MON_PREFS_KEY, JSON.stringify(mon
 
 // ── CSV Load ──
 // Busca una clave en el objeto p con matching flexible (case-insensitive, ignora espacios/tildes)
-function monCol(p, ...names) {
-  for (const name of names) {
-    // Buscar clave exacta primero
-    if (p[name] !== undefined) return p[name];
-    // Buscar case-insensitive
-    const low = name.toLowerCase();
-    for (const k of Object.keys(p)) {
-      if (k.toLowerCase() === low) return p[k];
-    }
-    // Buscar por similitud quitando espacios y caracteres especiales
-    const norm = s => s.toLowerCase().replace(/[^a-z0-9]/g,'');
-    const n2 = norm(name);
-    for (const k of Object.keys(p)) {
-      if (norm(k) === n2) return p[k];
-    }
-  }
-  return '';
-}
+
 
 function loadMonData() {
   if (monDataLoaded) return;
@@ -2516,10 +2499,38 @@ function loadMonData() {
 
       // Búsqueda de columnas Me > 1,5 y Me < 1,5 por el signo > / <
       // (el normalizador las confunde porque ambas colapsan a "me15")
+      // Maneja: >, &gt;, mayor, gt  /  <, &lt;, menor, lt
       const findBySign = (p, sign) => {
+        // Normalizar el signo buscado a sus variantes equivalentes
+        const isGt = sign === '>';
+        const signVariants = isGt
+          ? ['>', '&gt;', 'mayor', ' gt', '_gt', 'gt ']
+          : ['<', '&lt;', 'menor', ' lt', '_lt', 'lt '];
+        // También aseguramos que la columna opuesta NO sea elegida accidentalmente
+        const oppositeVariants = isGt
+          ? ['<', '&lt;', 'menor', ' lt', '_lt']
+          : ['>', '&gt;', 'mayor', ' gt', '_gt'];
+
         for (const k of Object.keys(p)) {
-          if (k.includes(sign) && /me/i.test(k) && /1[,.]5/.test(k) && !/m2|x m/i.test(k))
-            return n(p[k]);
+          // Debe mencionar "me" y "1,5" o "1.5", y no ser columna de m2 ni %
+          if (!/me/i.test(k)) continue;
+          if (!/1[,.]5/.test(k)) continue;
+          if (/m2|x m/i.test(k) || k.includes('%')) continue;
+          // Verificar que contiene alguna variante del signo buscado
+          const hasSign = signVariants.some(v => k.includes(v));
+          if (!hasSign) continue;
+          // Verificar que NO contiene variantes del signo opuesto (evita confusión)
+          const hasOpposite = oppositeVariants.some(v => k.includes(v));
+          if (hasOpposite) continue;
+          return n(p[k]);
+        }
+        // Segunda pasada: buscar por posición de columna relativa si hay exactamente 2 columnas "me...1.5"
+        const meCols = Object.keys(p).filter(k =>
+          /me/i.test(k) && /1[,.]5/.test(k) && !/m2|x m/i.test(k) && !k.includes('%')
+        );
+        if (meCols.length === 2) {
+          // Asumimos que la primera es Me > 1,5 y la segunda Me < 1,5 (orden del sheet)
+          return n(p[meCols[isGt ? 0 : 1]]);
         }
         return 0;
       };
@@ -2558,6 +2569,30 @@ function loadMonData() {
           // Fallback: columna pre-calculada ya existente en el sheet
           return n(G(p, ...precalcKeys));
         };
+        // m2val para Me > 1,5 y Me < 1,5 con búsqueda por signo (evita colisión de normalización)
+        const m2valSign = (rawCount, sign, ...precalcKeys) => {
+          if (area > 0) return rawCount / area;
+          const v = G(p, ...precalcKeys);
+          if (v !== '') return n(v);
+          const isGt = sign === '>';
+          const signVariants = isGt ? ['>', '&gt;', 'mayor'] : ['<', '&lt;', 'menor'];
+          const oppVariants  = isGt ? ['<', '&lt;', 'menor'] : ['>', '&gt;', 'mayor'];
+          for (const k of Object.keys(p)) {
+            if (!/me/i.test(k) || !/1[,.]5/.test(k)) continue;
+            if (!(/m2|x m/i.test(k))) continue;
+            if (k.includes('%')) continue;
+            const hasSign = signVariants.some(sv => k.includes(sv));
+            if (!hasSign) continue;
+            const hasOpp = oppVariants.some(sv => k.includes(sv));
+            if (hasOpp) continue;
+            return n(p[k]);
+          }
+          const meCols = Object.keys(p).filter(k =>
+            /me/i.test(k) && /1[,.]5/.test(k) && /m2|x m/i.test(k) && !k.includes('%')
+          );
+          if (meCols.length === 2) return n(p[meCols[isGt ? 0 : 1]]);
+          return 0;
+        };
 
         // Conteos crudos (siempre los leemos; si area=0 se usa el fallback pre-calc)
         const cMe_gt  = findBySign(p, '>');
@@ -2585,8 +2620,8 @@ function loadMonData() {
           ef:      efSoja || efGen,
           sitio:   parseInt(G(p,'Sitio')) || 1,
           // ind/m²: desde conteo crudo / área (capa 1) o columna pre-calculada (capa 2)
-          me_gt_m2:  m2val(cMe_gt,  'Me > 1,5 x m2','Me > 1.5 x m2','Me>1,5 x m2'),
-          me_lt_m2:  m2val(cMe_lt,  'Me < 1,5 x m2','Me < 1.5 x m2','Me<1,5 x m2'),
+          me_gt_m2:  m2valSign(cMe_gt, '>', 'Me > 1,5 x m2','Me > 1.5 x m2','Me>1,5 x m2','Me &gt; 1,5 x m2','Me &gt; 1.5 x m2','Me_gt_m2','me_gt_m2'),
+          me_lt_m2:  m2valSign(cMe_lt, '<', 'Me < 1,5 x m2','Me < 1.5 x m2','Me<1,5 x m2','Me &lt; 1,5 x m2','Me &lt; 1.5 x m2','Me_lt_m2','me_lt_m2'),
           gp_m2:     m2val(cGp,     'GP x m2'),
           bol_m2:    m2val(cBol,    'Bol x m2'),
           thecla_m2: m2val(cThecla, 'Thecla x m2'),
