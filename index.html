@@ -2500,109 +2500,65 @@ function loadMonData() {
   }, 25000);
 
   Papa.parse(MON_CSV, {
-    download: true, header: true, skipEmptyLines: true,
+    download: true, header: false, skipEmptyLines: true,
+    escapeChar: '"',
+    quoteChar: '"',
     complete(res) {
       clearTimeout(timeoutId);
       try {
-      if (!res.data?.length) {
+      if (!res.data?.length || res.data.length < 2) {
         statsEl.textContent = 'No se encontraron datos. Verificá que la hoja esté publicada como CSV.';
         return;
       }
 
-      // Mapeo por nombre de columna (robusto ante reordenamientos o columnas extra)
-      // Nombres exactos de la planilla:
-      // ID | Insectos | Coordinador | Responsable | Registro | Hora | Fecha | Cultivo |
-      // Empresa | Campo | Lote | Destino | EF | EF Soja | Sitio | DEH (cm) | mL |
-      // Me > 1,5 | Me < 1,5 | GP | Bol | Thecla | Ch aa | Ch ve | Ch cu | Ch alq | Arañuela |
-      // Me > 1,5 x m2 | Me < 1,5 x m2 | GP x m2 | Bol x m2 | Thecla x m2 |
-      // Ch aa x m2 | Ch ve x m2 | Ch cu x m2 | Ch alq x m2 | Arañ |
-      // Me > 1,5 % | Me < 1,5 % | GP % | Bol % | Thecla % |
-      // Ch aa % | Ch ve % | Ch cu % | Ch alq % | total chinche
+      // Separar header (fila 0) de datos (filas 1+)
+      const rawHdrs = res.data[0].map(h => String(h||'').trim());
+      const rawRows = res.data.slice(1);
+
+      console.log('🐛 MON headers raw:', rawHdrs);
+      console.log('🐛 MON fila1 raw:', rawRows[0]);
+      statsEl.textContent = `CSV cargado: ${rawRows.length} filas · ${rawHdrs.length} columnas · procesando…`;
 
       const n = s => { const v = String(s||'').replace(',','.').trim(); return parseFloat(v)||0; };
-
-      // ── Parseo robusto por posición ──
-      // Los headers llegan corruptos porque el CSV tiene valores con comillas (ej: "3,00")
-      // que confunden a PapaParse. En lugar de buscar por nombre, re-parseamos sin header
-      // para acceder a las columnas por índice, que son estables.
-      // Orden de columnas de la planilla:
-      // 0:1(ID) 1:ID Insectos 2:Coordinador 3:Responsable 4:Registro 5:Hora 6:Fecha
-      // 7:Cultivo 8:Empresa 9:Campo 10:Lote 11:Destino 12:EF 13:EF Soja 14:Sitio
-      // 15:DEH(cm) 16:mL 17:Me>1,5 18:Me<1,5 19:GP 20:Bol 21:Thecla
-      // 22:Ch aa 23:Ch ve 24:Ch cu 25:Ch alq 26:Arañuela
-      // 27:Me>1,5 x m2 28:Me<1,5 x m2 29:GP x m2 30:Bol x m2 31:Thecla x m2
-      // 32:Ch aa x m2 33:Ch ve x m2 34:Ch cu x m2 35:Ch alq x m2 36:Arañ
-      // 37:Me>1,5% 38:Me<1,5% ... 44:total chinche
-
-      // Guardamos los nombres reales de columna para diagnóstico
-      const csvCols = res.data.length > 0 ? Object.keys(res.data[0]) : [];
-      console.log('🐛 MON CSV cols:', csvCols);
-      console.log('🐛 MON CSV fila1:', res.data[0]);
-      window._monCsvCols = csvCols;
-      statsEl.textContent = `CSV cargado: ${res.data.length} filas · ${csvCols.length} columnas · procesando…`;
-
-      // Función que busca en el objeto por nombre (con fallbacks flexibles) O por índice
-      const G = (p, ...names) => monCol(p, ...names);
-
-      // Búsqueda por posición usando los valores del objeto (orden de inserción = orden CSV)
-      const byPos = (p, idx) => {
-        const vals = Object.values(p);
-        return vals[idx] !== undefined ? vals[idx] : '';
-      };
-
-      // Detectar el índice real de cada columna clave buscando en los headers
-      // Esto es más robusto que posición fija porque tolera columnas extras al inicio
-      const hdrs = csvCols;
       const norm = s => s.toLowerCase().replace(/[^a-z0-9]/g,'');
+
+      // Encontrar índice de columna por nombre (con normalización)
       const findIdx = (...targets) => {
         const tNorms = targets.map(norm);
-        for (let i = 0; i < hdrs.length; i++) {
-          if (tNorms.includes(norm(hdrs[i]))) return i;
+        for (let i = 0; i < rawHdrs.length; i++) {
+          if (tNorms.includes(norm(rawHdrs[i]))) return i;
         }
-        // Segunda pasada: búsqueda parcial
-        for (let i = 0; i < hdrs.length; i++) {
-          const hn = norm(hdrs[i]);
-          if (targets.some(t => hn.includes(norm(t)) || norm(t).includes(hn))) return i;
+        for (let i = 0; i < rawHdrs.length; i++) {
+          const hn = norm(rawHdrs[i]);
+          if (targets.some(t => hn.includes(norm(t)) && norm(t).length > 2)) return i;
         }
         return -1;
       };
-      // Para Me > y Me < no podemos usar norm (colapsan), buscamos por signo literal o posición
-      const findIdxSign = (sign) => {
+      // Para Me > y Me < buscamos por el signo en el header (no normalizable)
+      const findIdxSign = (sign, withM2) => {
         const isGt = sign === '>';
-        // Buscar por signo literal en el nombre del header
-        for (let i = 0; i < hdrs.length; i++) {
-          const h = hdrs[i];
-          if (!/me/i.test(h) || !/1[,.]5/.test(h)) continue;
-          if (/m2|x m/i.test(h) || h.includes('%')) continue;
-          if (isGt && (h.includes('>') || h.includes('&gt;'))) return i;
-          if (!isGt && (h.includes('<') || h.includes('&lt;'))) return i;
+        const opp  = isGt ? '<' : '>';
+        for (let i = 0; i < rawHdrs.length; i++) {
+          const h = rawHdrs[i];
+          if (!/me/i.test(h) || !/1[,.]5/i.test(h)) continue;
+          if (withM2  && !/m2|x m/i.test(h)) continue;
+          if (!withM2 && (/m2|x m/i.test(h) || h.includes('%'))) continue;
+          if (!h.includes(sign)) continue;
+          if (h.includes(opp)) continue; // evitar confusión con el signo opuesto
+          return i;
         }
-        // Fallback por posición relativa: las dos columnas "me...1,5" sin m2 ni %
-        const meCols = hdrs.map((h,i) => ({h,i})).filter(({h}) =>
-          /me/i.test(h) && /1[,.]5/.test(h) && !/m2|x m/i.test(h) && !h.includes('%')
-        );
-        if (meCols.length >= 2) return meCols[isGt ? 0 : 1].i;
-        if (meCols.length === 1) return meCols[0].i; // último recurso
-        return -1;
-      };
-      const findIdxSignM2 = (sign) => {
-        const isGt = sign === '>';
-        for (let i = 0; i < hdrs.length; i++) {
-          const h = hdrs[i];
-          if (!/me/i.test(h) || !/1[,.]5/.test(h)) continue;
-          if (!/m2|x m/i.test(h)) continue;
-          if (h.includes('%')) continue;
-          if (isGt && (h.includes('>') || h.includes('&gt;'))) return i;
-          if (!isGt && (h.includes('<') || h.includes('&lt;'))) return i;
-        }
-        const meCols = hdrs.map((h,i) => ({h,i})).filter(({h}) =>
-          /me/i.test(h) && /1[,.]5/.test(h) && /m2|x m/i.test(h) && !h.includes('%')
-        );
-        if (meCols.length >= 2) return meCols[isGt ? 0 : 1].i;
+        // Fallback posicional: tomar primera o segunda columna "me...1,5" del tipo correcto
+        const candidates = rawHdrs.map((h,i) => ({h,i})).filter(({h}) => {
+          if (!/me/i.test(h) || !/1[,.]5/i.test(h)) return false;
+          if (withM2)  return /m2|x m/i.test(h) && !h.includes('%');
+          return !/m2|x m/i.test(h) && !h.includes('%');
+        });
+        if (candidates.length >= 2) return candidates[isGt ? 0 : 1].i;
+        if (candidates.length === 1) return candidates[0].i;
         return -1;
       };
 
-      // Pre-calcular índices una sola vez para todas las filas
+      // Índices de cada columna
       const iResp    = findIdx('Responsable');
       const iFecha   = findIdx('Fecha');
       const iCultivo = findIdx('Cultivo');
@@ -2615,42 +2571,39 @@ function loadMonData() {
       const iSitio   = findIdx('Sitio');
       const iDEH     = findIdx('DEH (cm)','DEH');
       const iML      = findIdx('mL','ml');
-      const iMeGt    = findIdxSign('>');
-      const iMeLt    = findIdxSign('<');
+      const iMeGt    = findIdxSign('>', false);
+      const iMeLt    = findIdxSign('<', false);
       const iGP      = findIdx('GP');
       const iBol     = findIdx('Bol');
       const iThecla  = findIdx('Thecla');
-      const iChAa    = findIdx('Ch aa','Chaa','ch_aa');
-      const iChVe    = findIdx('Ch ve','Chve','ch_ve');
-      const iChCu    = findIdx('Ch cu','Chcu','ch_cu');
-      const iChAlq   = findIdx('Ch alq','Chalq','ch_alq');
+      const iChAa    = findIdx('Ch aa');
+      const iChVe    = findIdx('Ch ve');
+      const iChCu    = findIdx('Ch cu');
+      const iChAlq   = findIdx('Ch alq');
       const iAran    = findIdx('Arañuela','Aranuela');
-      const iMeGtM2  = findIdxSignM2('>');
-      const iMeLtM2  = findIdxSignM2('<');
-      const iGPM2    = findIdx('GP x m2','GPxm2');
-      const iBolM2   = findIdx('Bol x m2','Bolxm2');
-      const iTheclaM2= findIdx('Thecla x m2','Theclapm2');
-      const iChAaM2  = findIdx('Ch aa x m2','Chaaxm2');
-      const iChVeM2  = findIdx('Ch ve x m2','Chvexm2');
-      const iChCuM2  = findIdx('Ch cu x m2','Chcuxm2');
-      const iChAlqM2 = findIdx('Ch alq x m2','Chalqxm2');
+      const iMeGtM2  = findIdxSign('>', true);
+      const iMeLtM2  = findIdxSign('<', true);
+      const iGPM2    = findIdx('GP x m2');
+      const iBolM2   = findIdx('Bol x m2');
+      const iTheclaM2= findIdx('Thecla x m2');
+      const iChAaM2  = findIdx('Ch aa x m2');
+      const iChVeM2  = findIdx('Ch ve x m2');
+      const iChCuM2  = findIdx('Ch cu x m2');
+      const iChAlqM2 = findIdx('Ch alq x m2');
 
-      console.log('🐛 Índices detectados:', {iResp,iFecha,iCultivo,iLote,iEF,iEFSoja,iSitio,iDEH,iML,iMeGt,iMeLt,iGP,iBol,iThecla,iChAa,iChVe,iChCu,iChAlq,iAran,iMeGtM2,iMeLtM2});
+      console.log('🐛 Índices:', {iFecha,iLote,iEF,iEFSoja,iSitio,iDEH,iML,iMeGt,iMeLt,iGP,iBol,iThecla,iChAa,iChVe,iChCu,iChAlq,iAran,iMeGtM2,iMeLtM2,iGPM2,iBolM2});
 
-      monSites = res.data.flatMap(p => {
-        const vals = Object.values(p);
-        const v = (idx) => idx >= 0 ? String(vals[idx] || '').trim() : '';
+      monSites = rawRows.flatMap(row => {
+        const v   = (idx) => idx >= 0 && idx < row.length ? String(row[idx]||'').trim() : '';
 
         const lote  = v(iLote);
         const fecha = v(iFecha);
         if (!lote || !fecha) return [];
 
-        // ── Área muestreada desde DEH + mL ──
         const deh  = n(v(iDEH));
         const ml   = n(v(iML));
         const area = (deh > 0 && ml > 0) ? ml * (deh / 100) : 0;
 
-        // ── Conteos crudos ──
         const cMe_gt  = n(v(iMeGt));
         const cMe_lt  = n(v(iMeLt));
         const cGp     = n(v(iGP));
@@ -2661,7 +2614,6 @@ function loadMonData() {
         const cCh_cu  = n(v(iChCu));
         const cCh_alq = n(v(iChAlq));
 
-        // ── ind/m²: desde conteo/área si área>0, sino columna pre-calculada ──
         const m2v = (raw, preIdx) => area > 0 ? raw / area : n(v(preIdx));
 
         const arRaw  = v(iAran).toUpperCase();
