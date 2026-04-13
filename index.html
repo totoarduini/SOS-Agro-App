@@ -2507,13 +2507,18 @@ function loadMonData() {
       const G = (p, ...names) => monCol(p, ...names);
       const n = s => { const v = String(s||'').replace(',','.'); return parseFloat(v)||0; };
 
-      // Búsqueda directa de columnas con > y < en el nombre (evita colisión en normalización)
-      const rawCount = (p, key) => {
-        if (p[key] !== undefined) return n(p[key]);
-        // fallback: busca ignorando case
-        const low = key.toLowerCase();
+      // Siempre loguea la primera fila para diagnóstico (ver en F12 > Console)
+      if (res.data.length > 0) {
+        console.log('🐛 MON CSV cols:', Object.keys(res.data[0]));
+        console.log('🐛 MON CSV fila1:', res.data[0]);
+      }
+
+      // Búsqueda de columnas Me > 1,5 y Me < 1,5 por el signo > / <
+      // (el normalizador las confunde porque ambas colapsan a "me15")
+      const findBySign = (p, sign) => {
         for (const k of Object.keys(p)) {
-          if (k.toLowerCase() === low) return n(p[k]);
+          if (k.includes(sign) && /me/i.test(k) && /1[,.]5/.test(k) && !/m2|x m/i.test(k))
+            return n(p[k]);
         }
         return 0;
       };
@@ -2523,38 +2528,53 @@ function loadMonData() {
         const fecha = String(G(p,'Fecha')||'').trim();
         if (!lote || !fecha) return [];
 
-        // DEH y mL para calcular área muestreada por sitio (m²)
-        const deh  = n(G(p,'DEH (cm)','DEH','deh'));
-        const ml   = n(G(p,'mL','ml','ML'));
+        // ── Capa 1: área muestreada desde DEH + mL ──
+        const deh  = n(G(p,'DEH (cm)','DEH (Cm)','DEH (CM)','DEH','deh'));
+        const ml   = n(G(p,'mL','ml','ML','Ml','metros lineales','Metros Lineales'));
         const area = (deh > 0 && ml > 0) ? ml * (deh / 100) : 0;
-        // Convierte conteo crudo → ind/m²
-        const toM2 = raw => (area > 0 ? raw / area : 0);
 
-        const arRaw = String(G(p,'Arañuela','Aranuela','Arañ','Aran')||'').trim().toUpperCase();
-        // EF Soja tiene prioridad sobre EF genérico
+        // ── ind/m²: usa raw/area si area>0, si no lee columna pre-calculada del sheet ──
+        const m2val = (rawCount, ...precalcKeys) => {
+          if (area > 0) return rawCount / area;
+          // Fallback: columna pre-calculada ya existente en el sheet
+          return n(G(p, ...precalcKeys));
+        };
+
+        // Conteos crudos (siempre los leemos; si area=0 se usa el fallback pre-calc)
+        const cMe_gt  = findBySign(p, '>');
+        const cMe_lt  = findBySign(p, '<');
+        const cGp     = n(G(p,'GP'));
+        const cBol    = n(G(p,'Bol'));
+        const cThecla = n(G(p,'Thecla'));
+        const cCh_aa  = n(G(p,'Ch aa','Ch. aa','Chaa'));
+        const cCh_ve  = n(G(p,'Ch ve','Ch. ve','Chve'));
+        const cCh_cu  = n(G(p,'Ch cu','Ch. cu','Chcu'));
+        const cCh_alq = n(G(p,'Ch alq','Ch. alq','Chalq'));
+
+        const arRaw  = String(G(p,'Arañuela','Aranuela','Arañ','Aran')||'').trim().toUpperCase();
         const efSoja = String(G(p,'EF Soja','EFSoja')||'').trim();
         const efGen  = String(G(p,'EF')||'').trim();
+
         return [{
-          resp:      String(G(p,'Responsable')||'').trim(),
+          resp:    String(G(p,'Responsable')||'').trim(),
           fecha,
-          cultivo:   String(G(p,'Cultivo')||'').trim(),
-          empresa:   String(G(p,'Empresa')||'').trim(),
-          campo:     String(G(p,'Campo')||'').trim(),
+          cultivo: String(G(p,'Cultivo')||'').trim(),
+          empresa: String(G(p,'Empresa')||'').trim(),
+          campo:   String(G(p,'Campo')||'').trim(),
           lote,
-          destino:   String(G(p,'Destino')||'').trim() || 'Cosecha',
-          ef:        efSoja || efGen,
-          sitio:     parseInt(G(p,'Sitio')) || 1,
-          // Ind/m² calculados en el app desde conteos crudos + DEH + mL
-          me_gt_m2:  toM2(rawCount(p,'Me > 1,5')),
-          me_lt_m2:  toM2(rawCount(p,'Me < 1,5')),
-          gp_m2:     toM2(n(G(p,'GP'))),
-          bol_m2:    toM2(n(G(p,'Bol'))),
-          thecla_m2: toM2(n(G(p,'Thecla'))),
-          ch_aa_m2:  toM2(n(G(p,'Ch aa'))),
-          ch_ve_m2:  toM2(n(G(p,'Ch ve'))),
-          ch_cu_m2:  toM2(n(G(p,'Ch cu'))),
-          ch_alq_m2: toM2(n(G(p,'Ch alq'))),
-          // Arañuela: SI/NO
+          destino: String(G(p,'Destino')||'').trim() || 'Cosecha',
+          ef:      efSoja || efGen,
+          sitio:   parseInt(G(p,'Sitio')) || 1,
+          // ind/m²: desde conteo crudo / área (capa 1) o columna pre-calculada (capa 2)
+          me_gt_m2:  m2val(cMe_gt,  'Me > 1,5 x m2','Me > 1.5 x m2','Me>1,5 x m2'),
+          me_lt_m2:  m2val(cMe_lt,  'Me < 1,5 x m2','Me < 1.5 x m2','Me<1,5 x m2'),
+          gp_m2:     m2val(cGp,     'GP x m2'),
+          bol_m2:    m2val(cBol,    'Bol x m2'),
+          thecla_m2: m2val(cThecla, 'Thecla x m2'),
+          ch_aa_m2:  m2val(cCh_aa,  'Ch aa x m2','Ch. aa x m2'),
+          ch_ve_m2:  m2val(cCh_ve,  'Ch ve x m2','Ch. ve x m2'),
+          ch_cu_m2:  m2val(cCh_cu,  'Ch cu x m2','Ch. cu x m2'),
+          ch_alq_m2: m2val(cCh_alq, 'Ch alq x m2','Ch. alq x m2'),
           aran: arRaw==='SI'?1 : arRaw==='NO'?0 : 0,
         }];
       });
