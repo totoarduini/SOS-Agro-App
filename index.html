@@ -662,10 +662,6 @@ td.mono { font-family: 'IBM Plex Mono', monospace; font-size: 12px; }
 
     <div class="mon-filters" id="mon-filters-bar">
       <div class="mon-fg">
-        <label>Campaña</label>
-        <select id="mon-f-campana" onchange="monCascadeFrom('campana')"><option value="">Todas</option></select>
-      </div>
-      <div class="mon-fg">
         <label>Empresa</label>
         <select id="mon-f-empresa" onchange="monCascadeFrom('empresa')"><option value="">Todas</option></select>
       </div>
@@ -2568,8 +2564,7 @@ function loadMonData() {
       const iCultivo = findIdx('Cultivo');
       const iEmpresa = findIdx('Empresa');
       const iCampo   = findIdx('Campo');
-      const iLote    = findIdx("Lote");
-      const iCampana = findIdx("Campa\xc3\xb1a","Campana","Campaign");
+      const iLote    = findIdx('Lote');
       const iDestino = findIdx('Destino');
       const iEF      = findIdx('EF');
       const iEFSoja  = findIdx('EF Soja','EFSoja');
@@ -2632,7 +2627,6 @@ function loadMonData() {
           empresa:   v(iEmpresa),
           campo:     v(iCampo),
           lote,
-          campana:   v(iCampana),
           destino:   v(iDestino) || 'Cosecha',
           ef:        efSoja || efGen,
           sitio:     parseInt(v(iSitio)) || 1,
@@ -2684,7 +2678,7 @@ function monComputeRecorridas() {
   for (const s of monSites) {
     const k = s.cultivo + '||' + s.lote + '||' + s.fecha;
     if (!map[k]) map[k] = { cultivo:s.cultivo, lote:s.lote, fecha:s.fecha,
-      empresa:s.empresa, campo:s.campo, ef:s.ef, destino:s.destino, resp:s.resp, campana:s.campana, sites:[] };
+      empresa:s.empresa, campo:s.campo, ef:s.ef, destino:s.destino, resp:s.resp, sites:[] };
     map[k].sites.push(s);
     map[k].ef = s.ef; map[k].resp = s.resp;
   }
@@ -2789,12 +2783,10 @@ function monBar(lbl, pct, m2) {
 
 // ── Filters ──
 function monGetFiltered() {
-  const fCamp=monV('mon-f-campana');
   const fE=monV('mon-f-empresa'), fCa=monV('mon-f-campo'), fL=monV('mon-f-lote');
   const fCu=monV('mon-f-cultivo'), fR=monV('mon-f-resp'), fEF=monV('mon-f-ef');
   const fFrom=monV('mon-f-from'), fTo=monV('mon-f-to');
   return monRecorridas.filter(r => {
-    if (fCamp && r.campana !== fCamp) return false;
     if (fE  && r.empresa !== fE)  return false;
     if (fCa && r.campo   !== fCa) return false;
     if (fL  && r.lote    !== fL)  return false;
@@ -2808,28 +2800,22 @@ function monGetFiltered() {
 }
 
 function monCascadeFrom(from) {
-  const fCamp=monV('mon-f-campana');
   const fE=monV('mon-f-empresa'), fCa=monV('mon-f-campo'), fL=monV('mon-f-lote');
   const monPool = (filters) => monRecorridas.filter(r => {
     for (const [k,v] of Object.entries(filters)) if (v && r[k] !== v) return false;
     return true;
   });
-  if (from === 'campana' || from === 'reset') {
-    const empresas = [...new Set(monPool({campana:fCamp}).map(r=>r.empresa).filter(Boolean))].sort();
-    monRefill('mon-f-empresa', empresas, from==='reset'?'':fE);
-  }
-  const fE2 = monV('mon-f-empresa');
-  if (from === 'campana' || from === 'empresa' || from === 'reset') {
-    const campos = [...new Set(monPool({campana:fCamp,empresa:fE2}).map(r=>r.campo).filter(Boolean))].sort();
+  if (from === 'empresa' || from === 'reset') {
+    const campos = [...new Set(monPool({empresa:fE}).map(r=>r.campo).filter(Boolean))].sort();
     monRefill('mon-f-campo', campos, from==='reset'?'':fCa);
   }
   const fCa2 = monV('mon-f-campo');
-  if (from === 'campana' || from === 'empresa' || from === 'campo' || from === 'reset') {
-    const lotes = [...new Set(monPool({campana:fCamp,empresa:fE2,campo:fCa2}).map(r=>r.lote).filter(Boolean))].sort();
+  if (from === 'empresa' || from === 'campo' || from === 'reset') {
+    const lotes = [...new Set(monPool({empresa:fE,campo:fCa2}).map(r=>r.lote).filter(Boolean))].sort();
     monRefill('mon-f-lote', lotes, from==='reset'?'':fL);
   }
   const fL2 = monV('mon-f-lote');
-  const downstream = monPool({campana:fCamp, empresa:fE2, campo:fCa2, lote:fL2});
+  const downstream = monPool({empresa:fE, campo:fCa2, lote:fL2});
   monRefill('mon-f-cultivo',[...new Set(downstream.map(r=>r.cultivo).filter(Boolean))].sort(), from==='reset'?'':monV('mon-f-cultivo'));
   monRefill('mon-f-ef',     [...new Set(downstream.map(r=>r.ef).filter(Boolean))].sort((a,b)=>a.localeCompare(b,undefined,{numeric:true})), from==='reset'?'':monV('mon-f-ef'));
   monRefill('mon-f-resp',   [...new Set(downstream.map(r=>r.resp).filter(Boolean))].sort(), from==='reset'?'':monV('mon-f-resp'));
@@ -2847,7 +2833,6 @@ function monRefill(id, opts, keepVal) {
 function monPopulateAllFilters() {
   const all = k => [...new Set(monRecorridas.map(r=>r[k]).filter(Boolean))].sort((a,b)=>
     typeof a==='string' ? a.localeCompare(b,undefined,{numeric:true}) : (a-b));
-  monRefill('mon-f-campana', all('campana'), '');
   monRefill('mon-f-empresa', all('empresa'), '');
   monRefill('mon-f-campo',   all('campo'),   '');
   monRefill('mon-f-lote',    all('lote'),    '');
@@ -2857,7 +2842,7 @@ function monPopulateAllFilters() {
 }
 
 function monResetFilters() {
-  ['mon-f-campana','mon-f-empresa','mon-f-campo','mon-f-lote','mon-f-cultivo','mon-f-ef','mon-f-resp'].forEach(id=>{
+  ['mon-f-empresa','mon-f-campo','mon-f-lote','mon-f-cultivo','mon-f-ef','mon-f-resp'].forEach(id=>{
     const el=document.getElementById(id); if(el) el.value='';
   });
   ['mon-f-from','mon-f-to'].forEach(id=>{const el=document.getElementById(id);if(el)el.value='';});
