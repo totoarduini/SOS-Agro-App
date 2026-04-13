@@ -2465,6 +2465,23 @@ function monSavePrefs() { localStorage.setItem(MON_PREFS_KEY, JSON.stringify(mon
 // ── CSV Load ──
 // Busca una clave en el objeto p con matching flexible (case-insensitive, ignora espacios/tildes)
 
+function monCol(p, ...names) {
+  for (const name of names) {
+    if (p[name] !== undefined) return p[name];
+    const low = name.toLowerCase();
+    for (const k of Object.keys(p)) {
+      if (k.toLowerCase() === low) return p[k];
+    }
+    if (/>|<|&gt;|&lt;/.test(name)) continue;
+    const norm = s => s.toLowerCase().replace(/[^a-z0-9]/g,"");
+    const n2 = norm(name);
+    for (const k of Object.keys(p)) {
+      if (norm(k) === n2) return p[k];
+    }
+  }
+  return "";
+}
+
 
 function loadMonData() {
   if (monDataLoaded) return;
