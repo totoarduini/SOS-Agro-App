@@ -833,7 +833,6 @@ function loadData() {
       if (!res.data?.length) { showError('No se encontraron datos.'); return; }
       allData = res.data;
       buildColMap(allData[0]);
-      console.log('Columnas CSV:', Object.keys(allData[0]));
       buildFilterDropdowns();
       buildSupFilterDropdowns();
       applyFilters();
@@ -1014,14 +1013,8 @@ function switchTab(tab) {
   document.getElementById('filtersRegistros').style.display = tab === 'registros' ? '' : 'none';
   document.getElementById('filtersResumenes').style.display  = SUMMARY_TABS.includes(tab) ? '' : 'none';
   updateTopOffset();
-  if (tab === 'superficies') renderSuperficies();
-  if (tab === 'porlote')     renderPorLote();
-  if (tab === 'suelo')       renderSuelo();
-  if (tab === 'genetica')    renderGenetica();
-  if (tab === 'plansiembra')  renderPlanSiembra();
-  if (tab === 'fertilizante') renderFertilizante();
-  if (tab === 'recn')         renderRecN();
-  if (tab === 'monitoreo')    initMonitoreo();
+  renderActiveSupTab();
+  if (tab === 'monitoreo') initMonitoreo();
 }
 
 // ── SUPERFICIES FILTERS ───────────────────────────────────────────────
@@ -1107,11 +1100,15 @@ function onSupFilterChange(changedId) {
     refreshSupDropdown(fd);
   }
   refreshSupDropdown(SUP_FILTER_DEF[idx]);
-  if (activeTab === 'superficies') renderSuperficies();
-  if (activeTab === 'porlote')     renderPorLote();
-  if (activeTab === 'suelo')       renderSuelo();
-  if (activeTab === 'genetica')    renderGenetica();
-  if (activeTab === 'plansiembra') renderPlanSiembra();
+  renderActiveSupTab();
+}
+
+function renderActiveSupTab() {
+  if (activeTab === 'superficies')  renderSuperficies();
+  if (activeTab === 'porlote')      renderPorLote();
+  if (activeTab === 'suelo')        renderSuelo();
+  if (activeTab === 'genetica')     renderGenetica();
+  if (activeTab === 'plansiembra')  renderPlanSiembra();
   if (activeTab === 'fertilizante') renderFertilizante();
   if (activeTab === 'recn')         renderRecN();
 }
@@ -1121,16 +1118,17 @@ const CULTIVO_COLORS = {
   soja:    '#eab308', maiz:    '#3b82f6', trigo:   '#f59e0b',
   girasol: '#f97316', cebada:  '#8b5cf6', other:   '#94a3b8'
 };
-function cultivoColor(c) {
-  if (!c) return CULTIVO_COLORS.other;
+function cultivoKey(c) {
+  if (!c) return 'other';
   const lc = c.toLowerCase();
-  if (lc.includes('soja'))   return CULTIVO_COLORS.soja;
-  if (lc.includes('maiz') || lc.includes('maíz')) return CULTIVO_COLORS.maiz;
-  if (lc.includes('trigo'))   return CULTIVO_COLORS.trigo;
-  if (lc.includes('girasol')) return CULTIVO_COLORS.girasol;
-  if (lc.includes('cebada'))  return CULTIVO_COLORS.cebada;
-  return CULTIVO_COLORS.other;
+  if (lc.includes('soja'))                         return 'soja';
+  if (lc.includes('maiz') || lc.includes('maíz')) return 'maiz';
+  if (lc.includes('trigo'))                        return 'trigo';
+  if (lc.includes('girasol'))                      return 'girasol';
+  if (lc.includes('cebada'))                       return 'cebada';
+  return 'other';
 }
+function cultivoColor(c) { return CULTIVO_COLORS[cultivoKey(c)]; }
 
 let pieChartInstance = null;
 
@@ -1243,6 +1241,15 @@ function fmtHa(n) {
   return n.toLocaleString('es-AR', { minimumFractionDigits: 1, maximumFractionDigits: 1 });
 }
 
+// ── SORT HELPER ───────────────────────────────────────────────────────
+// Comparador numérico/string reutilizable para todas las tablas resumen
+function cmpVals(va, vb, asc) {
+  const na = typeof va === 'number' ? va : parseFloat(String(va).replace(',', '.'));
+  const nb = typeof vb === 'number' ? vb : parseFloat(String(vb).replace(',', '.'));
+  if (!isNaN(na) && !isNaN(nb)) return asc ? na - nb : nb - na;
+  return asc ? String(va).localeCompare(String(vb), 'es') : String(vb).localeCompare(String(va), 'es');
+}
+
 // ── POR LOTE ──────────────────────────────────────────────────────────
 let loteSortCol = 'Campo', loteSortAsc = true;
 function sortLote(col) {
@@ -1250,12 +1257,8 @@ function sortLote(col) {
   renderPorLote();
 }
 function renderPorLote() {
-  const data = [...getSupFiltered()].sort((a, b) => {
-    let va = a[loteSortCol] || '', vb = b[loteSortCol] || '';
-    const na = parseFloat(String(va).replace(',','.')), nb = parseFloat(String(vb).replace(',','.'));
-    if (!isNaN(na) && !isNaN(nb)) return loteSortAsc ? na - nb : nb - na;
-    return loteSortAsc ? va.localeCompare(vb, 'es') : vb.localeCompare(va, 'es');
-  });
+  const data = [...getSupFiltered()].sort((a, b) =>
+    cmpVals(a[loteSortCol] || '', b[loteSortCol] || '', loteSortAsc));
   document.getElementById('supCountBadge').innerHTML = `<strong>${data.length}</strong> / ${allData.length} registros`;
   const tbody = document.getElementById('loteBody');
   if (!data.length) { tbody.innerHTML = '<tr><td colspan="6" style="text-align:center;padding:40px;color:var(--text3)">Sin resultados</td></tr>'; return; }
@@ -1283,13 +1286,7 @@ function renderSuelo() {
   // Solo filas con al menos P o Año análisis P
   const data = [...getSupFiltered()].filter(r =>
     hasVal(getF(r,'P','P Bray')) || hasVal(r['Año análisis P'])
-  ).sort((a, b) => {
-    const colMap2 = { 'Arena':'Arena','pH':'pH','M.O.':'M.O.','P':'P','Año análisis P':'Año análisis P', 'EMPRESA':'EMPRESA','Campo':'Campo','Lote':'Lote','Cultivo':'Cultivo' };
-    let va = a[colMap2[sueloSortCol]] || '', vb = b[colMap2[sueloSortCol]] || '';
-    const na = parseFloat(String(va).replace(',','.')), nb = parseFloat(String(vb).replace(',','.'));
-    if (!isNaN(na) && !isNaN(nb)) return sueloSortAsc ? na - nb : nb - na;
-    return sueloSortAsc ? va.localeCompare(vb, 'es') : vb.localeCompare(va, 'es');
-  });
+  ).sort((a, b) => cmpVals(a[sueloSortCol] || '', b[sueloSortCol] || '', sueloSortAsc));
   document.getElementById('supCountBadge').innerHTML = `<strong>${data.length}</strong> registros con análisis`;
   const tbody = document.getElementById('sueloBody');
   if (!data.length) { tbody.innerHTML = '<tr><td colspan="9" style="text-align:center;padding:40px;color:var(--text3)">Sin datos de análisis para los filtros seleccionados</td></tr>'; return; }
@@ -1343,13 +1340,8 @@ function renderGenetica() {
     }
   });
 
-  const rows = Object.values(grupos).sort((a, b) => {
-    const va = a[genSortCol] || '', vb = b[genSortCol] || '';
-    const na = typeof va === 'number' ? va : parseFloat(String(va).replace(',','.')),
-          nb = typeof vb === 'number' ? vb : parseFloat(String(vb).replace(',','.'));
-    if (!isNaN(na) && !isNaN(nb)) return genSortAsc ? na - nb : nb - na;
-    return genSortAsc ? String(va).localeCompare(String(vb),'es') : String(vb).localeCompare(String(va),'es');
-  });
+  const rows = Object.values(grupos).sort((a, b) =>
+    cmpVals(a[genSortCol] ?? '', b[genSortCol] ?? '', genSortAsc));
 
   const grandTotal = rows.reduce((s, r) => s + r.ha, 0);
 
@@ -1422,12 +1414,8 @@ function sortPlan(col) {
 }
 
 function renderPlanSiembra() {
-  const data = [...getSupFiltered()].sort((a, b) => {
-    const va = a[planSortCol] || '', vb = b[planSortCol] || '';
-    const na = parseFloat(String(va).replace(',','.')), nb = parseFloat(String(vb).replace(',','.'));
-    if (!isNaN(na) && !isNaN(nb)) return planSortAsc ? na - nb : nb - na;
-    return planSortAsc ? String(va).localeCompare(String(vb),'es') : String(vb).localeCompare(String(va),'es');
-  });
+  const data = [...getSupFiltered()].sort((a, b) =>
+    cmpVals(a[planSortCol] || '', b[planSortCol] || '', planSortAsc));
 
   document.getElementById('supCountBadge').innerHTML = `<strong>${data.length}</strong> / ${allData.length} registros`;
 
@@ -1522,12 +1510,8 @@ function sortFert(col) {
 }
 
 function renderFertilizante() {
-  const data = [...getSupFiltered()].sort((a, b) => {
-    const va = a[fertSortCol] || '', vb = b[fertSortCol] || '';
-    const na = pn(va) ?? NaN, nb = pn(vb) ?? NaN;
-    if (!isNaN(na) && !isNaN(nb)) return fertSortAsc ? na - nb : nb - na;
-    return fertSortAsc ? String(va).localeCompare(String(vb),'es') : String(vb).localeCompare(String(va),'es');
-  });
+  const data = [...getSupFiltered()].sort((a, b) =>
+    cmpVals(pn(a[fertSortCol]) ?? a[fertSortCol] ?? '', pn(b[fertSortCol]) ?? b[fertSortCol] ?? '', fertSortAsc));
 
   document.getElementById('supCountBadge').innerHTML = `<strong>${data.length}</strong> / ${allData.length} registros`;
 
@@ -1659,13 +1643,8 @@ function renderRecN() {
     return { ...r, _dosisCalc: dosisCalc, _dosisRecom: dosisRecom };
   };
   const rawData = getSupFiltered().map(enrich);
-  const data = [...rawData].sort((a, b) => {
-    let va = a[recnSortCol] ?? '', vb = b[recnSortCol] ?? '';
-    const na = typeof va === 'number' ? va : pn(String(va)) ?? NaN;
-    const nb = typeof vb === 'number' ? vb : pn(String(vb)) ?? NaN;
-    if (!isNaN(na) && !isNaN(nb)) return recnSortAsc ? na - nb : nb - na;
-    return recnSortAsc ? String(va).localeCompare(String(vb), 'es') : String(vb).localeCompare(String(va), 'es');
-  });
+  const data = [...rawData].sort((a, b) =>
+    cmpVals(a[recnSortCol] ?? '', b[recnSortCol] ?? '', recnSortAsc));
 
   document.getElementById('supCountBadge').innerHTML = `<strong>${data.length}</strong> / ${allData.length} registros`;
 
@@ -1777,24 +1756,24 @@ function renderRecN() {
     : '<tr><td colspan="3" style="text-align:center;padding:20px;color:var(--text3)">Sin datos</td></tr>';
 }
 
+// ── ESTILOS EXCEL COMPARTIDOS ─────────────────────────────────────────
+const XLS_BS   = 'border:1px solid #d0d7de';
+const XLS_THS  = `background:#1a5c30;color:#fff;font-weight:bold;padding:8px 12px;${XLS_BS};white-space:nowrap;font-size:11pt`;
+const XLS_TDS  = `padding:6px 12px;${XLS_BS};font-size:10pt`;
+const XLS_TDR  = `${XLS_TDS};text-align:right`;
+const XLS_TDT  = `${XLS_TDS};background:#f0fdf4;font-weight:bold;text-align:right;color:#15803d`;
+const XLS_TDTL = `${XLS_TDS};background:#f0fdf4;font-weight:bold;color:#15803d`;
+const XLS_THS2 = `background:#2d6a4f;color:#fff;font-weight:bold;padding:7px 10px;${XLS_BS};font-size:10pt`;
+const XLS_FMTN = v => (v !== null && v !== undefined) ? Number(v).toLocaleString('es-AR', {minimumFractionDigits:0, maximumFractionDigits:2}) : '';
+
 // ── EXPORTAR FERTILIZANTE TOTAL ───────────────────────────────────────
 function exportFertExcel() {
-  const data = [...getSupFiltered()].sort((a, b) => {
-    const va = a[fertSortCol]||'', vb = b[fertSortCol]||'';
-    const na = pn(va)??NaN, nb = pn(vb)??NaN;
-    if (!isNaN(na) && !isNaN(nb)) return fertSortAsc ? na-nb : nb-na;
-    return fertSortAsc ? String(va).localeCompare(String(vb),'es') : String(vb).localeCompare(String(va),'es');
-  });
+  const data = [...getSupFiltered()].sort((a, b) =>
+    cmpVals(pn(a[fertSortCol]) ?? a[fertSortCol] ?? '', pn(b[fertSortCol]) ?? b[fertSortCol] ?? '', fertSortAsc));
   if (!data.length) { alert('No hay datos para exportar.'); return; }
 
-  const bs = 'border:1px solid #d0d7de';
-  const thS = `background:#1a5c30;color:#fff;font-weight:bold;padding:8px 12px;${bs};white-space:nowrap;font-size:11pt`;
-  const tdS = `padding:6px 12px;${bs};font-size:10pt`;
-  const tdR = `${tdS};text-align:right`;
-  const tdT = `${tdS};background:#f0fdf4;font-weight:bold;text-align:right;color:#15803d`;
-  const tdTL= `${tdS};background:#f0fdf4;font-weight:bold;color:#15803d`;
-  const thS2= `background:#2d6a4f;color:#fff;font-weight:bold;padding:7px 10px;${bs};font-size:10pt`;
-  const fmtN = v => v!==null&&v!==undefined ? Number(v).toLocaleString('es-AR',{minimumFractionDigits:0,maximumFractionDigits:2}) : '';
+  const bs = XLS_BS, thS = XLS_THS, tdS = XLS_TDS, tdR = XLS_TDR;
+  const tdT = XLS_TDT, tdTL = XLS_TDTL, thS2 = XLS_THS2, fmtN = XLS_FMTN;
 
   const filtrosTxt = [
     SUP_SEL.campana.size?'Campaña: '+[...SUP_SEL.campana].join(', '):'',
@@ -1813,8 +1792,8 @@ function exportFertExcel() {
     totSup += sup; totKg += kg;
     if (fert) resumen[fert] = (resumen[fert]||0) + kg;
     const campo = r['Campo']||'—';
-    if (!porCampo[campo]) porCampo[campo]={sup:0,kg:0};
-    porCampo[campo].sup+=sup; porCampo[campo].kg+=kg;
+    if (!porCampo[campo]) porCampo[campo] = { sup: 0, kg: 0 };
+    porCampo[campo].sup += sup; porCampo[campo].kg += kg;
     return [r['Campo']||'', r['Lote']||'', r['Ambiente Regional']||'', r['Cultivo']||'',
             fert, fmtN(sup), r['P']||'', r['Año análisis P']||'',
             r['Dosis Fert. P Producto 1']||'', fmtN(kg)];
@@ -1829,42 +1808,43 @@ function exportFertExcel() {
 <tr><td colspan="${ncols}" style="background:#1a5c30;color:#fff;font-size:14pt;font-weight:bold;padding:12px 16px;border:1px solid #1a5c30">Fertilizante Total — SOS Agro</td></tr>
 <tr><td colspan="${ncols}" style="background:#f0fdf4;color:#15803d;font-size:9pt;padding:6px 12px;${bs}">Generado: ${fecha} | ${filtrosTxt}</td></tr>
 <tr><td colspan="${ncols}" style="padding:4px"> </td></tr>
-<tr>${hdrs.map(h=>`<th style="${thS}">${h}</th>`).join('')}</tr>`;
-  filas.forEach((f,i) => {
-    const bg = i%2===0?'':'background:#f8fafb;';
-    const td=(v,r=false)=>`<td style="${r?tdR:tdS};${bg}">${v??''}</td>`;
-    html+=`<tr>${td(f[0])}${td(f[1])}${td(f[2])}${td(f[3])}${td(f[4])}${td(f[5],true)}${td(f[6],true)}${td(f[7],true)}${td(f[8],true)}${td(f[9],true)}</tr>`;
+<tr>${hdrs.map(h => `<th style="${thS}">${h}</th>`).join('')}</tr>`;
+  filas.forEach((f, i) => {
+    const bg = i % 2 === 0 ? '' : 'background:#f8fafb;';
+    const td = (v, r = false) => `<td style="${r ? tdR : tdS};${bg}">${v ?? ''}</td>`;
+    html += `<tr>${td(f[0])}${td(f[1])}${td(f[2])}${td(f[3])}${td(f[4])}${td(f[5],true)}${td(f[6],true)}${td(f[7],true)}${td(f[8],true)}${td(f[9],true)}</tr>`;
   });
-  html+=`<tr><td colspan="${ncols-4}" style="${tdTL}">TOTAL</td><td style="${tdT}">${fmtN(totSup)}</td><td style="${tdT}"></td><td style="${tdT}"></td><td style="${tdT}"></td><td style="${tdT}">${fmtN(totKg)}</td></tr>`;
+  html += `<tr><td colspan="${ncols-4}" style="${tdTL}">TOTAL</td><td style="${tdT}">${fmtN(totSup)}</td><td style="${tdT}"></td><td style="${tdT}"></td><td style="${tdT}"></td><td style="${tdT}">${fmtN(totKg)}</td></tr>`;
 
   // Resumen por fertilizante
-  html+=`<tr><td colspan="${ncols}" style="padding:8px"> </td></tr>`;
-  html+=`<tr><td colspan="${ncols}" style="${thS2}">📦 Resumen por Fertilizante Fosforado</td></tr>`;
-  html+=`<tr><th style="${thS}">Fertilizante</th><th style="${thS}">kg Totales</th><td colspan="${ncols-2}"></td></tr>`;
-  Object.entries(resumen).sort((a,b)=>b[1]-a[1]).forEach(([n,kg])=>{
-    html+=`<tr><td style="${tdS}">${n}</td><td style="${tdR}">${fmtN(kg)}</td><td colspan="${ncols-2}"></td></tr>`;
+  html += `<tr><td colspan="${ncols}" style="padding:8px"> </td></tr>`;
+  html += `<tr><td colspan="${ncols}" style="${thS2}">📦 Resumen por Fertilizante Fosforado</td></tr>`;
+  html += `<tr><th style="${thS}">Fertilizante</th><th style="${thS}">kg Totales</th><td colspan="${ncols-2}"></td></tr>`;
+  Object.entries(resumen).sort((a, b) => b[1] - a[1]).forEach(([n, kg]) => {
+    html += `<tr><td style="${tdS}">${n}</td><td style="${tdR}">${fmtN(kg)}</td><td colspan="${ncols-2}"></td></tr>`;
   });
-  const totRes=Object.values(resumen).reduce((s,v)=>s+v,0);
-  html+=`<tr><td style="${tdTL}">TOTAL</td><td style="${tdT}">${fmtN(totRes)}</td><td colspan="${ncols-2}"></td></tr>`;
+  const totRes = Object.values(resumen).reduce((s, v) => s + v, 0);
+  html += `<tr><td style="${tdTL}">TOTAL</td><td style="${tdT}">${fmtN(totRes)}</td><td colspan="${ncols-2}"></td></tr>`;
 
   // Total por campo
-  html+=`<tr><td colspan="${ncols}" style="padding:8px"> </td></tr>`;
-  html+=`<tr><td colspan="${ncols}" style="${thS2}">🏡 Total por Campo</td></tr>`;
-  html+=`<tr><th style="${thS}">Campo</th><th style="${thS}">Sup. (ha)</th><th style="${thS}">kg Fert. P</th><td colspan="${ncols-3}"></td></tr>`;
-  const campoRows=Object.entries(porCampo).sort((a,b)=>a[0].localeCompare(b[0],'es'));
-  campoRows.forEach(([c,v])=>{
-    html+=`<tr><td style="${tdS};font-weight:bold">${c}</td><td style="${tdR}">${fmtN(v.sup)}</td><td style="${tdR}">${fmtN(v.kg)}</td><td colspan="${ncols-3}"></td></tr>`;
+  html += `<tr><td colspan="${ncols}" style="padding:8px"> </td></tr>`;
+  html += `<tr><td colspan="${ncols}" style="${thS2}">🏡 Total por Campo</td></tr>`;
+  html += `<tr><th style="${thS}">Campo</th><th style="${thS}">Sup. (ha)</th><th style="${thS}">kg Fert. P</th><td colspan="${ncols-3}"></td></tr>`;
+  const campoRows = Object.entries(porCampo).sort((a, b) => a[0].localeCompare(b[0], 'es'));
+  campoRows.forEach(([c, v]) => {
+    html += `<tr><td style="${tdS};font-weight:bold">${c}</td><td style="${tdR}">${fmtN(v.sup)}</td><td style="${tdR}">${fmtN(v.kg)}</td><td colspan="${ncols-3}"></td></tr>`;
   });
-  const totCS=campoRows.reduce((s,[,v])=>s+v.sup,0), totCK=campoRows.reduce((s,[,v])=>s+v.kg,0);
-  html+=`<tr><td style="${tdTL}">TOTAL</td><td style="${tdT}">${fmtN(totCS)}</td><td style="${tdT}">${fmtN(totCK)}</td><td colspan="${ncols-3}"></td></tr>`;
+  const totCS = campoRows.reduce((s, [, v]) => s + v.sup, 0);
+  const totCK = campoRows.reduce((s, [, v]) => s + v.kg, 0);
+  html += `<tr><td style="${tdTL}">TOTAL</td><td style="${tdT}">${fmtN(totCS)}</td><td style="${tdT}">${fmtN(totCK)}</td><td colspan="${ncols-3}"></td></tr>`;
 
-  html+=`</table></body></html>`;
-  const blob=new Blob(['\uFEFF'+html],{type:'application/vnd.ms-excel;charset=utf-8'});
-  const url=URL.createObjectURL(blob);
-  const a=document.createElement('a');
-  a.href=url;
-  const campana=SUP_SEL.campana.size?[...SUP_SEL.campana][0]:'Plan';
-  a.download=`SOS_Agro_FertilizanteTotal_${campana}_${fecha.replace(/\//g,'-')}.xls`;
+  html += `</table></body></html>`;
+  const blob = new Blob(['\uFEFF' + html], { type: 'application/vnd.ms-excel;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  const campana = SUP_SEL.campana.size ? [...SUP_SEL.campana][0] : 'Plan';
+  a.download = `SOS_Agro_FertilizanteTotal_${campana}_${fecha.replace(/\//g, '-')}.xls`;
   a.click(); URL.revokeObjectURL(url);
 }
 
@@ -1872,33 +1852,22 @@ function exportFertExcel() {
 function exportRecNExcel() {
   const enrich = r => ({
     ...r,
-    _dosisCalc:  pn(getF(r,'Dosis calculada','DosisCalculada')),
-    _dosisRecom: pn(getF(r,'Dosis 2','Dosis de fertilizante recom_ (kilos/ha)','DosisRecomendada'))
+    _dosisCalc:  pn(getF(r, 'Dosis calculada', 'DosisCalculada')),
+    _dosisRecom: pn(getF(r, 'Dosis 2', 'Dosis de fertilizante recom_ (kilos/ha)', 'DosisRecomendada'))
   });
-  const data = [...getSupFiltered()].map(enrich).sort((a,b)=>{
-    let va=a[recnSortCol]??'', vb=b[recnSortCol]??'';
-    const na=typeof va==='number'?va:pn(String(va))??NaN;
-    const nb=typeof vb==='number'?vb:pn(String(vb))??NaN;
-    if(!isNaN(na)&&!isNaN(nb)) return recnSortAsc?na-nb:nb-na;
-    return recnSortAsc?String(va).localeCompare(String(vb),'es'):String(vb).localeCompare(String(va),'es');
-  });
+  const data = [...getSupFiltered()].map(enrich).sort((a, b) =>
+    cmpVals(a[recnSortCol] ?? '', b[recnSortCol] ?? '', recnSortAsc));
   if (!data.length) { alert('No hay datos para exportar.'); return; }
 
-  const bs='border:1px solid #d0d7de';
-  const thS=`background:#1a5c30;color:#fff;font-weight:bold;padding:8px 12px;${bs};white-space:nowrap;font-size:11pt`;
-  const tdS=`padding:6px 12px;${bs};font-size:10pt`;
-  const tdR=`${tdS};text-align:right`;
-  const tdT=`${tdS};background:#f0fdf4;font-weight:bold;text-align:right;color:#15803d`;
-  const tdTL=`${tdS};background:#f0fdf4;font-weight:bold;color:#15803d`;
-  const thS2=`background:#2d6a4f;color:#fff;font-weight:bold;padding:7px 10px;${bs};font-size:10pt`;
-  const fmtN=v=>v!==null&&v!==undefined?Number(v).toLocaleString('es-AR',{minimumFractionDigits:0,maximumFractionDigits:2}):'';
+  const bs = XLS_BS, thS = XLS_THS, tdS = XLS_TDS, tdR = XLS_TDR;
+  const tdT = XLS_TDT, tdTL = XLS_TDTL, thS2 = XLS_THS2, fmtN = XLS_FMTN;
 
-  const filtrosTxt=[
-    SUP_SEL.campana.size?'Campaña: '+[...SUP_SEL.campana].join(', '):'',
-    SUP_SEL.empresa.size?'Empresa: '+[...SUP_SEL.empresa].join(', '):'',
-    SUP_SEL.campo.size?'Campo: '+[...SUP_SEL.campo].join(', '):'',
-  ].filter(Boolean).join(' | ')||'Sin filtros';
-  const fecha=new Date().toLocaleDateString('es-AR');
+  const filtrosTxt = [
+    SUP_SEL.campana.size ? 'Campaña: ' + [...SUP_SEL.campana].join(', ') : '',
+    SUP_SEL.empresa.size ? 'Empresa: ' + [...SUP_SEL.empresa].join(', ') : '',
+    SUP_SEL.campo.size   ? 'Campo: '   + [...SUP_SEL.campo].join(', ')   : '',
+  ].filter(Boolean).join(' | ') || 'Sin filtros';
+  const fecha = new Date().toLocaleDateString('es-AR');
 
   let totSup=0,totKg=0;
   const wpP={nSuelo:[],nObj:[],dosCalc:[],dosRecom:[],nAlc:[]};
@@ -1920,28 +1889,28 @@ function exportRecNExcel() {
     porCampo[campo].sup+=sup; porCampo[campo].kg+=kg;
     return [r['Campo']||'',r['Lote']||'',r['Ambiente Regional']||'',r['Antecesor']||'',
             r['Fertilizante P Producto 1']||'',fertN,
-            (getF(r,'INFO ANÁLISIS N','INFO ANALISIS N')||'').slice(0,80),
-            fmtN(sup),fmtN(nSuelo),fmtN(nObj),fmtN(dCalc),fmtN(dRec),fmtN(nAlc),fmtN(kg)];
+            (getF(r, 'INFO ANÁLISIS N', 'INFO ANALISIS N') || '').slice(0, 80),
+            fmtN(sup), fmtN(nSuelo), fmtN(nObj), fmtN(dCalc), fmtN(dRec), fmtN(nAlc), fmtN(kg)];
   });
 
-  const hdrs=['Campo','Lote','Ambiente','Antecesor','Fertilizante P','Fert. N','Info Análisis N','Sup. (ha)','N suelo 0-60','N Objetivo','Dosis Calc.','Dosis Recom.','N Alc. Real','kg Fert. N total'];
-  const ncols=hdrs.length;
-  const dosisP=totSup>0?totKg/totSup:null;
+  const hdrs = ['Campo','Lote','Ambiente','Antecesor','Fertilizante P','Fert. N','Info Análisis N','Sup. (ha)','N suelo 0-60','N Objetivo','Dosis Calc.','Dosis Recom.','N Alc. Real','kg Fert. N total'];
+  const ncols = hdrs.length;
+  const dosisP = totSup > 0 ? totKg / totSup : null;
 
-  let html=`<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40"><head><meta charset="UTF-8">
+  let html = `<html xmlns:o="urn:schemas-microsoft-com:office:office" xmlns:x="urn:schemas-microsoft-com:office:excel" xmlns="http://www.w3.org/TR/REC-html40"><head><meta charset="UTF-8">
 <!--[if gte mso 9]><xml><x:ExcelWorkbook><x:ExcelWorksheets><x:ExcelWorksheet><x:Name>Rec Fert N</x:Name><x:WorksheetOptions><x:DisplayGridlines/></x:WorksheetOptions></x:ExcelWorksheet></x:ExcelWorksheets></x:ExcelWorkbook></xml><![endif]-->
 </head><body><table style="border-collapse:collapse;font-family:Calibri,Arial,sans-serif">
 <tr><td colspan="${ncols}" style="background:#1a5c30;color:#fff;font-size:14pt;font-weight:bold;padding:12px 16px;border:1px solid #1a5c30">🌿 Recomendación Fertilización N — SOS Agro</td></tr>
 <tr><td colspan="${ncols}" style="background:#f0fdf4;color:#15803d;font-size:9pt;padding:6px 12px;${bs}">Generado: ${fecha} | ${filtrosTxt}</td></tr>
 <tr><td colspan="${ncols}" style="padding:4px"> </td></tr>
-<tr>${hdrs.map(h=>`<th style="${thS}">${h}</th>`).join('')}</tr>`;
-  filas.forEach((f,i)=>{
-    const bg=i%2===0?'':'background:#f8fafb;';
-    const td=(v,r=false)=>`<td style="${r?tdR:tdS};${bg}">${v??''}</td>`;
-    html+=`<tr>${td(f[0])}${td(f[1])}${td(f[2])}${td(f[3])}${td(f[4])}${td(f[5])}${td(f[6])}${td(f[7],true)}${td(f[8],true)}${td(f[9],true)}${td(f[10],true)}${td(f[11],true)}${td(f[12],true)}${td(f[13],true)}</tr>`;
+<tr>${hdrs.map(h => `<th style="${thS}">${h}</th>`).join('')}</tr>`;
+  filas.forEach((f, i) => {
+    const bg = i % 2 === 0 ? '' : 'background:#f8fafb;';
+    const td = (v, r = false) => `<td style="${r ? tdR : tdS};${bg}">${v ?? ''}</td>`;
+    html += `<tr>${td(f[0])}${td(f[1])}${td(f[2])}${td(f[3])}${td(f[4])}${td(f[5])}${td(f[6])}${td(f[7],true)}${td(f[8],true)}${td(f[9],true)}${td(f[10],true)}${td(f[11],true)}${td(f[12],true)}${td(f[13],true)}</tr>`;
   });
   // Fila totales / promedios ponderados
-  html+=`<tr>
+  html += `<tr>
     <td colspan="7" style="${tdTL}">TOTAL / Prom. pond.</td>
     <td style="${tdT}">${fmtN(totSup)}</td>
     <td style="${tdT}">${fmtN(wAvg(wpP.nSuelo))}</td>
@@ -1949,47 +1918,45 @@ function exportRecNExcel() {
     <td style="${tdT}">${fmtN(wAvg(wpP.dosCalc))}</td>
     <td style="${tdT}">${fmtN(wAvg(wpP.dosRecom))}</td>
     <td style="${tdT}">${fmtN(wAvg(wpP.nAlc))}</td>
-    <td style="${tdT}">${fmtN(totKg)}${dosisP!==null?' ('+fmtN(dosisP)+' kg/ha)':''}</td>
+    <td style="${tdT}">${fmtN(totKg)}${dosisP !== null ? ' (' + fmtN(dosisP) + ' kg/ha)' : ''}</td>
   </tr>`;
 
   // Resumen por fertilizante N
-  html+=`<tr><td colspan="${ncols}" style="padding:8px"> </td></tr>`;
-  html+=`<tr><td colspan="${ncols}" style="${thS2}">📦 Resumen por Fertilizante N</td></tr>`;
-  html+=`<tr><th style="${thS}">Fertilizante N</th><th style="${thS}">kg Totales</th><td colspan="${ncols-2}"></td></tr>`;
-  Object.entries(resumen).sort((a,b)=>b[1]-a[1]).forEach(([n,kg])=>{
-    html+=`<tr><td style="${tdS}">${n}</td><td style="${tdR}">${fmtN(kg)}</td><td colspan="${ncols-2}"></td></tr>`;
+  html += `<tr><td colspan="${ncols}" style="padding:8px"> </td></tr>`;
+  html += `<tr><td colspan="${ncols}" style="${thS2}">📦 Resumen por Fertilizante N</td></tr>`;
+  html += `<tr><th style="${thS}">Fertilizante N</th><th style="${thS}">kg Totales</th><td colspan="${ncols-2}"></td></tr>`;
+  Object.entries(resumen).sort((a, b) => b[1] - a[1]).forEach(([n, kg]) => {
+    html += `<tr><td style="${tdS}">${n}</td><td style="${tdR}">${fmtN(kg)}</td><td colspan="${ncols-2}"></td></tr>`;
   });
-  const totRes=Object.values(resumen).reduce((s,v)=>s+v,0);
-  html+=`<tr><td style="${tdTL}">TOTAL</td><td style="${tdT}">${fmtN(totRes)}</td><td colspan="${ncols-2}"></td></tr>`;
+  const totRes = Object.values(resumen).reduce((s, v) => s + v, 0);
+  html += `<tr><td style="${tdTL}">TOTAL</td><td style="${tdT}">${fmtN(totRes)}</td><td colspan="${ncols-2}"></td></tr>`;
 
   // Total por campo
-  html+=`<tr><td colspan="${ncols}" style="padding:8px"> </td></tr>`;
-  html+=`<tr><td colspan="${ncols}" style="${thS2}">🏡 Total por Campo</td></tr>`;
-  html+=`<tr><th style="${thS}">Campo</th><th style="${thS}">Sup. (ha)</th><th style="${thS}">kg Fert. N</th><td colspan="${ncols-3}"></td></tr>`;
-  const cRows=Object.entries(porCampo).sort((a,b)=>a[0].localeCompare(b[0],'es'));
-  cRows.forEach(([c,v])=>{
-    html+=`<tr><td style="${tdS};font-weight:bold">${c}</td><td style="${tdR}">${fmtN(v.sup)}</td><td style="${tdR}">${fmtN(v.kg)}</td><td colspan="${ncols-3}"></td></tr>`;
+  html += `<tr><td colspan="${ncols}" style="padding:8px"> </td></tr>`;
+  html += `<tr><td colspan="${ncols}" style="${thS2}">🏡 Total por Campo</td></tr>`;
+  html += `<tr><th style="${thS}">Campo</th><th style="${thS}">Sup. (ha)</th><th style="${thS}">kg Fert. N</th><td colspan="${ncols-3}"></td></tr>`;
+  const cRows = Object.entries(porCampo).sort((a, b) => a[0].localeCompare(b[0], 'es'));
+  cRows.forEach(([c, v]) => {
+    html += `<tr><td style="${tdS};font-weight:bold">${c}</td><td style="${tdR}">${fmtN(v.sup)}</td><td style="${tdR}">${fmtN(v.kg)}</td><td colspan="${ncols-3}"></td></tr>`;
   });
-  const totCS=cRows.reduce((s,[,v])=>s+v.sup,0),totCK=cRows.reduce((s,[,v])=>s+v.kg,0);
-  html+=`<tr><td style="${tdTL}">TOTAL</td><td style="${tdT}">${fmtN(totCS)}</td><td style="${tdT}">${fmtN(totCK)}</td><td colspan="${ncols-3}"></td></tr>`;
+  const totCS = cRows.reduce((s, [, v]) => s + v.sup, 0);
+  const totCK = cRows.reduce((s, [, v]) => s + v.kg,  0);
+  html += `<tr><td style="${tdTL}">TOTAL</td><td style="${tdT}">${fmtN(totCS)}</td><td style="${tdT}">${fmtN(totCK)}</td><td colspan="${ncols-3}"></td></tr>`;
 
-  html+=`</table></body></html>`;
-  const blob=new Blob(['\uFEFF'+html],{type:'application/vnd.ms-excel;charset=utf-8'});
-  const url=URL.createObjectURL(blob);
-  const a=document.createElement('a'); a.href=url;
-  const campana=SUP_SEL.campana.size?[...SUP_SEL.campana][0]:'Plan';
-  a.download=`SOS_Agro_RecFertN_${campana}_${fecha.replace(/\//g,'-')}.xls`;
+  html += `</table></body></html>`;
+  const blob = new Blob(['\uFEFF' + html], { type: 'application/vnd.ms-excel;charset=utf-8' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  const campana = SUP_SEL.campana.size ? [...SUP_SEL.campana][0] : 'Plan';
+  a.download = `SOS_Agro_RecFertN_${campana}_${fecha.replace(/\//g, '-')}.xls`;
   a.click(); URL.revokeObjectURL(url);
 }
 
 // ── EXPORTAR EXCEL (Plan de Siembra) ─────────────────────────────────
 function exportPlanExcel() {
-  const data = [...getSupFiltered()].sort((a, b) => {
-    const va = a[planSortCol] || '', vb = b[planSortCol] || '';
-    const na = parseFloat(String(va).replace(',','.')), nb = parseFloat(String(vb).replace(',','.'));
-    if (!isNaN(na) && !isNaN(nb)) return planSortAsc ? na - nb : nb - na;
-    return planSortAsc ? String(va).localeCompare(String(vb),'es') : String(vb).localeCompare(String(va),'es');
-  });
+  const data = [...getSupFiltered()].sort((a, b) =>
+    cmpVals(a[planSortCol] || '', b[planSortCol] || '', planSortAsc));
   if (!data.length) { alert('No hay datos para exportar.'); return; }
 
   const modo = getPlanSemillaMode(data);
@@ -2394,14 +2361,7 @@ function hasVal(v) {
 
 function cultivoTag(c) {
   if (!c) return '';
-  const lc = c.toLowerCase();
-  let cls = 'tag-other';
-  if (lc.includes('soja'))   cls='tag-soja';
-  else if (lc.includes('maiz')||lc.includes('maíz')) cls='tag-maiz';
-  else if (lc.includes('trigo'))   cls='tag-trigo';
-  else if (lc.includes('girasol')) cls='tag-girasol';
-  else if (lc.includes('cebada'))  cls='tag-cebada';
-  return `<span class="tag ${cls}">${c}</span>`;
+  return `<span class="tag tag-${cultivoKey(c)}">${c}</span>`;
 }
 function fmt(val) {
   if (!val) return '';
@@ -2435,12 +2395,6 @@ function monEfGroup(ef, destino) {
   if (e === 'R6' || e === 'R7') return (destino || '').toLowerCase().includes('semilla') ? 'R67s' : 'R67';
   return 'R5';
 }
-function monCalcPct(v, ins, ef, dest) {
-  const g = monEfGroup(ef, dest), u = MON_UMBRAL[ins][g];
-  if (u === null) return null;
-  return Math.round((v / u) * 100);
-}
-
 // ── State ──
 let monSites = [], monRecorridas = [];
 let monPrefs = { lote_destino:{}, lote_date:{}, global_date:'' };
@@ -2461,26 +2415,6 @@ function monLoadPrefs() {
   }, 0);
 }
 function monSavePrefs() { localStorage.setItem(MON_PREFS_KEY, JSON.stringify(monPrefs)); }
-
-// ── CSV Load ──
-// Busca una clave en el objeto p con matching flexible (case-insensitive, ignora espacios/tildes)
-
-function monCol(p, ...names) {
-  for (const name of names) {
-    if (p[name] !== undefined) return p[name];
-    const low = name.toLowerCase();
-    for (const k of Object.keys(p)) {
-      if (k.toLowerCase() === low) return p[k];
-    }
-    if (/>|<|&gt;|&lt;/.test(name)) continue;
-    const norm = s => s.toLowerCase().replace(/[^a-z0-9]/g,"");
-    const n2 = norm(name);
-    for (const k of Object.keys(p)) {
-      if (norm(k) === n2) return p[k];
-    }
-  }
-  return "";
-}
 
 
 function loadMonData() {
@@ -2515,8 +2449,6 @@ function loadMonData() {
       const rawHdrs = res.data[0].map(h => String(h||'').trim());
       const rawRows = res.data.slice(1);
 
-      console.log('🐛 MON headers raw:', rawHdrs);
-      console.log('🐛 MON fila1 raw:', rawRows[0]);
       statsEl.textContent = `CSV cargado: ${rawRows.length} filas · ${rawHdrs.length} columnas · procesando…`;
 
       const n = s => { const v = String(s||'').replace(',','.').trim(); return parseFloat(v)||0; };
@@ -2590,8 +2522,6 @@ function loadMonData() {
       const iChVeM2  = findIdx('Ch ve x m2');
       const iChCuM2  = findIdx('Ch cu x m2');
       const iChAlqM2 = findIdx('Ch alq x m2');
-
-      console.log('🐛 Índices:', {iFecha,iLote,iEF,iEFSoja,iSitio,iDEH,iML,iMeGt,iMeLt,iGP,iBol,iThecla,iChAa,iChVe,iChCu,iChAlq,iAran,iMeGtM2,iMeLtM2,iGPM2,iBolM2});
 
       monSites = rawRows.flatMap(row => {
         const v   = (idx) => idx >= 0 && idx < row.length ? String(row[idx]||'').trim() : '';
